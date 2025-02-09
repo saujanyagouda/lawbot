@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% block content %}
+<div>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-container">
+            <div class="hero-text">
+                <h1>LawBot - Your AI-Powered Legal Assistant</h1>
+                <p>
+                    LawBot is an advanced AI-driven legal software designed to assist law firms and professionals 
+                    with case management, document automation, and client handling, making legal operations smoother and more efficient.
+                </p>
+               <a href="{% url 'signup' %}"> <button class="hero-btn" id="getStartedBtn">Get Started</button></a>
+            </div>
+            <div class="hero-image">
+                <img src="{% static 'images/lll.jpg' %}" alt="LawBot AI Assistant">
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <h2>Our Key Features</h2>
+        <div class="features-container">
+            <div class="feature-box">
+                <h3>AI-Powered Legal Research</h3>
+                <ul>
+                    <li>Instant access to case laws and precedents.</li>
+                    <li>AI-generated legal insights.</li>
+                    <li>Smart recommendations for case strategies.</li>
+                </ul>
+            </div>
+            <div class="feature-box">
+                <h3>Automated Case Management</h3>
+                <ul>
+                    <li>Organize client records and case details.</li>
+                    <li>Automated task assignments.</li>
+                    <li>Track deadlines and schedules.</li>
+                </ul>
+            </div>
+            <div class="feature-box">
+                <h3>Secure Document Storage</h3>
+                <ul>
+                    <li>Cloud-based storage with encryption.</li>
+                    <li>Real-time collaboration on legal documents.</li>
+                    <li>Version control and easy retrieval.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- About LawBot Section -->
+    <section class="about-lawbot-section">
+        <div class="about-lawbot-container">
+            <h2>Why LawBot?</h2>
+            <p>
+                LawBot is more than just a case management tool. It integrates artificial intelligence to enhance legal research, automate 
+                document drafting, and improve client interaction. With seamless automation and smart analytics, LawBot is designed 
+                to empower legal professionals and firms to operate at peak efficiency.
+            </p>
+        </div>
+    </section>
+</div>
+<script>
+    
+    
+</script>
+{% endblock %}

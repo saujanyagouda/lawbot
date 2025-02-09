@@ -1,0 +1,259 @@
+{% extends 'base1.html' %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2>Cases</h2>
+        <button class="btn btn-primary" id="addCaseBtn">+ Add Case</button>
+    </div>
+
+    <!-- Date Filters -->
+    <div class="row mt-3">
+        <div class="col-md-3">
+            <label for="fromDate" class="form-label">From Next Date:</label>
+            <input type="date" id="fromDate" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <label for="toDate" class="form-label">To Next Date:</label>
+            <input type="date" id="toDate" class="form-control">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-danger me-2" id="clearFilter">Clear</button>
+            <button class="btn btn-success" id="searchCases">🔍 Search</button>
+        </div>
+    </div>
+
+    <!-- Case Categories Tabs -->
+    <ul class="nav nav-tabs mt-3">
+        <li class="nav-item"><a class="nav-link active" href="#">Running Cases</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Important Cases</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">No Board Cases</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Archived Cases</a></li>
+    </ul>
+
+    <!-- Cases Table -->
+    <div class="table-container mt-3">
+        <div class="d-flex justify-content-between">
+            <div>
+                Show
+                <select id="entries" class="form-select d-inline-block w-auto">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+                entries
+            </div>
+            <input type="text" id="search" class="form-control w-auto" placeholder="Search...">
+        </div>
+
+        <table class="table table-bordered mt-3">
+            <thead class="table-light">
+                <tr>
+                    <th>No</th>
+                    <th>Client & Case Detail</th>
+                    <th>Court Detail</th>
+                    <th>Petitioner vs Respondent</th>
+                    <th>Next Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>
+                        <strong>Will Cc Smith</strong><br>
+                        No: 542344<br>
+                        Case: Murder
+                    </td>
+                    <td>
+                        Court: RTC - Branch 4<br>
+                        No: 3123<br>
+                        Magistrate: Judge Marvin Tapuyo
+                    </td>
+                    <td>
+                        Will Cc Smith VS Will Smith
+                    </td>
+                    <td>07-20-2021</td>
+                    <td><span class="badge bg-info">On-Trial</span></td>
+                    <td>
+                        <img src="{% static 'images/edit.png' %}" alt="edit" class="edit-icon" style="width: 20px; height: 20px; cursor: pointer;">
+                        <img src="{% static 'images/delet.png' %}" alt="delete" class="delete-icon" style="width: 20px; height: 20px; cursor: pointer;">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="d-flex justify-content-between">
+            <span>Showing 1 of 1 entries</span>
+            <div>
+                <button class="btn btn-light btn-sm">Previous</button>
+                <button class="btn btn-light btn-sm">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Add Case Modal -->
+<div class="modal fade" id="addCaseModal" tabindex="-1" aria-labelledby="addCaseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCaseModalLabel">Add New Case</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Client Name</label>
+                            <input type="text" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Client No</label>
+                            <input type="text" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Case Type</label>
+                            <input type="text" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Court</label>
+                            <input type="text" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Court No</label>
+                            <input type="text" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Magistrate</label>
+                            <input type="text" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Petitioner</label>
+                            <input type="text" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Respondent</label>
+                            <input type="text" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Next Date</label>
+                            <input type="date" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <select class="form-control">
+                                <option>Pending</option>
+                                <option>Closed</option>
+                                <option>On-Trial</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <label class="form-label">Assigned To</label>
+                            <input type="text" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const addCaseBtn = document.getElementById("addCaseBtn");
+        const addCaseModal = new bootstrap.Modal(document.getElementById("addCaseModal"));
+        const formInputs = document.querySelectorAll("#addCaseModal input, #addCaseModal select");
+        const submitButton = document.querySelector("#addCaseModal .btn-primary");
+    
+        let editMode = false;
+        let editRow = null;
+    
+        // Open modal for adding a new case
+        addCaseBtn.addEventListener("click", function () {
+            editMode = false;
+            submitButton.textContent = "Add";
+            formInputs.forEach(input => input.value = "");
+            addCaseModal.show();
+        });
+    
+        // Edit case logic
+        const editIcons = document.querySelectorAll(".edit-icon");
+        editIcons.forEach(icon => {
+            icon.addEventListener("click", function () {
+                editMode = true;
+                submitButton.textContent = "Update";
+    
+                editRow = this.closest("tr"); // Get the row
+                const cells = editRow.getElementsByTagName("td");
+    
+                // Pre-fill modal fields
+                formInputs[0].value = cells[1].querySelector("strong").textContent; // Client Name
+                formInputs[1].value = cells[1].innerText.split("\n")[1].split(": ")[1]; // Client No
+                formInputs[2].value = cells[1].innerText.split("\n")[2].split(": ")[1]; // Case Type
+                formInputs[3].value = cells[2].innerText.split("\n")[0].split(": ")[1]; // Court
+                formInputs[4].value = cells[2].innerText.split("\n")[1].split(": ")[1]; // Court No
+                formInputs[5].value = cells[2].innerText.split("\n")[2].split(": ")[1]; // Magistrate
+                formInputs[6].value = cells[3].innerText.split(" VS ")[0]; // Petitioner
+                formInputs[7].value = cells[3].innerText.split(" VS ")[1]; // Respondent
+                formInputs[8].value = cells[4].innerText; // Next Date
+                formInputs[9].value = cells[5].querySelector("span").textContent; // Status
+    
+                addCaseModal.show();
+            });
+        });
+    
+        // Handle form submission (Update or Add)
+        submitButton.addEventListener("click", function () {
+            if (editMode && editRow) {
+                const cells = editRow.getElementsByTagName("td");
+    
+                // Update table row with modal values
+                cells[1].innerHTML = `<strong>${formInputs[0].value}</strong><br>
+                                      No: ${formInputs[1].value}<br>
+                                      Case: ${formInputs[2].value}`;
+                cells[2].innerHTML = `Court: ${formInputs[3].value}<br>
+                                      No: ${formInputs[4].value}<br>
+                                      Magistrate: ${formInputs[5].value}`;
+                cells[3].innerHTML = `${formInputs[6].value} VS ${formInputs[7].value}`;
+                cells[4].textContent = formInputs[8].value;
+                cells[5].innerHTML = `<span class="badge bg-info">${formInputs[9].value}</span>`;
+    
+                editMode = false;
+                editRow = null;
+            } else {
+                alert("Adding new cases will be implemented soon!");
+            }
+    
+            addCaseModal.hide();
+        });
+    
+        // Delete case confirmation
+        const deleteIcons = document.querySelectorAll(".delete-icon");
+        deleteIcons.forEach(icon => {
+            icon.addEventListener("click", function () {
+                if (confirm("Are you sure you want to delete this case?")) {
+                    this.closest("tr").remove();
+                }
+            });
+        });
+    });
+    </script>
+    
+
+
+{% endblock%}

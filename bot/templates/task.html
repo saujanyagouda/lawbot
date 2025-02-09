@@ -1,0 +1,161 @@
+{% extends 'base1.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2>Tasks</h2>
+        <button class="btn btn-primary" id="addTaskBtn">+ Add Task</button>
+    </div>
+
+    <div class="table-container mt-3">
+        <div class="d-flex justify-content-between">
+            <div>
+                Show 
+                <select id="entries" class="form-select d-inline-block w-auto">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select> 
+                entries
+            </div>
+            <input type="text" id="search" class="form-control w-auto" placeholder="Search...">
+        </div>
+
+        <table class="table table-bordered mt-3">
+            <thead class="table-light">
+                <tr>
+                    <th>No</th>
+                    <th>Task Name</th>
+                    <th>Related To</th>
+                    <th>Start Date</th>
+                    <th>Deadline</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>Complete Case Report</td>
+                    <td>John Doe <span class="case-number">#CASE12345</span></td>
+                    <td>2025-02-10</td>
+                    <td>2025-02-20</td>
+                    <td><span class="badge badge-urgent">Urgent</span></td>
+                    <td><span class="badge badge-in-progress">In Progress</span></td>
+                    <td>
+                        <img src="{% static 'images/edit.png' %}" alt="edit" class="edit-icon" style="width: 20px; height: 20px; cursor: pointer;">
+                        <img src="{% static 'images/delet.png' %}" alt="Delete" class="delete-icon" style="width: 20px; height: 20px; cursor: pointer;">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="d-flex justify-content-between">
+            <span>Showing 1 of 1 entries</span>
+            <div>
+                <button class="btn btn-light btn-sm">Previous</button>
+                <button class="btn btn-light btn-sm">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal fade" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTaskModalLabel">Add New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addTaskForm">
+                    <div class="mb-3">
+                        <label for="taskName" class="form-label">Task Name</label>
+                        <input type="text" class="form-control" id="taskName" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="relatedTo" class="form-label">Related To Name</label>
+                            <input type="text" class="form-control" id="relatedTo" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="caseNumber" class="form-label">Case Number</label>
+                            <input type="text" class="form-control" id="caseNumber" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="deadline" class="form-label">Deadline</label>
+                            <input type="date" class="form-control" id="deadline" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="priority" class="form-label">Priority</label>
+                        <select class="form-control" id="priority" required>
+                            <option>Urgent</option>
+                            <option>High</option>
+                            <option>Medium</option>
+                            <option>Low</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-control" id="status" required>
+                            <option>Not Started</option>
+                            <option>In Progress</option>
+                            <option>Completed</option>
+                            <option>Pending</option>
+                        </select>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const addTaskBtn = document.getElementById("addTaskBtn");
+    const addTaskModal = new bootstrap.Modal(document.getElementById("addTaskModal"));
+    addTaskBtn.addEventListener("click", function () {
+        addTaskModal.show();
+    });
+
+    const deleteIcons = document.querySelectorAll(".delete-icon");
+    deleteIcons.forEach(icon => {
+        icon.addEventListener("click", function () {
+            if (confirm("Are you sure you want to delete this task?")) {
+                this.closest("tr").remove();
+            }
+        });
+    });
+
+    const editIcons = document.querySelectorAll(".edit-icon");
+    const editModal = new bootstrap.Modal(document.getElementById("editTaskModal"));
+    let currentRow = null;
+
+    editIcons.forEach(icon => {
+        icon.addEventListener("click", function () {
+            currentRow = this.closest("tr");
+            document.getElementById("editTaskName").value = currentRow.cells[1].textContent;
+            document.getElementById("editRelatedTo").value = currentRow.cells[2].textContent;
+            document.getElementById("editStartDate").value = currentRow.cells[3].textContent;
+            document.getElementById("editDeadline").value = currentRow.cells[4].textContent;
+            document.getElementById("editPriority").value = currentRow.cells[5].textContent;
+            document.getElementById("editStatus").value = currentRow.cells[6].textContent;
+            editModal.show();
+        });
+    });
+});
+</script>
+{% endblock %}

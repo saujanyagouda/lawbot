@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="contact-container">
+    <section class="contact-us">
+        <h1>Contact Us</h1>
+        <p>
+            If your law firm or legal department wants to increase productivity and reduce costs, it's time to upgrade to LawMaster.
+            Talk to us about how LawMaster can enhance your law practice.
+        </p>
+
+        <p><strong>Call us:</strong> <a href="tel:+91 9324540226" class="phone-number">+91 9324540226</a></p>
+        <p>or fill out the form below:</p>
+    </section>
+
+    <div class="contact-page">
+        <section class="contact-form-section">
+            <h2>Get in Touch</h2>
+            <form class="contact-form" id="contactForm" action="#" method="post">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first-name">First Name</label>
+                        <input type="text" id="first-name" name="first-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="last-name">Last Name</label>
+                        <input type="text" id="last-name" name="last-name" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="subject">Subject</label>
+                    <select id="subject" name="subject" required>
+                        <option value="">--Select--</option>
+                        <option value="general">General Inquiry</option>
+                        <option value="legal">Legal Assistance</option>
+                        <option value="appointment">Schedule an Appointment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="message">Message</label>
+                    <textarea id="message" name="message" rows="5" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Submit</button>
+            </form>
+        </section>
+
+        <section class="contact-info-section">
+            <h2>Our Offices</h2>
+            <div class="office-info">
+                <h3>Mumbai Office</h3>
+                <p>Vaswani Mansion, Office No. 17 & 18 3rd Floor, 120 Dinshaw Vachha Road, Churchgate, Mumbai – 400 020</p>
+                <p>+91 22 4340 8500</p>
+                <p><a href="mailto:mumbai@phoenixlegal.in">mumbai@phoenixlegal.in</a></p>
+            </div>
+
+            <button id="show-map-btn" class="map-toggle-btn">Show Map</button>
+            <div class="map-container" id="map-container" style="display: none;">
+                <iframe width="100%" height="350" 
+                    src="https://maps.google.com/maps?q=sies+sion+east&t=&z=13&ie=UTF8&iwloc=&output=embed"
+                    frameborder="0" allowfullscreen></iframe>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- JavaScript Section -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Show/Hide Google Map
+        const mapButton = document.getElementById("show-map-btn");
+        const mapContainer = document.getElementById("map-container");
+
+        mapButton.addEventListener("click", function () {
+            if (mapContainer.style.display === "none" || mapContainer.style.display === "") {
+                mapContainer.style.display = "block";
+                mapButton.textContent = "Hide Map";
+            } else {
+                mapContainer.style.display = "none";
+                mapButton.textContent = "Show Map";
+            }
+        });
+
+        // Form Validation
+        document.getElementById("contactForm").addEventListener("submit", function (e) {
+            e.preventDefault(); // Prevent form submission for validation
+
+            const firstName = document.getElementById("first-name").value.trim();
+            const lastName = document.getElementById("last-name").value.trim();
+            const phone = document.getElementById("phone").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const subject = document.getElementById("subject").value;
+            const message = document.getElementById("message").value.trim();
+
+            // Basic Validation
+            if (firstName === "" || lastName === "" || phone === "" || email === "" || subject === "" || message === "") {
+                alert("All fields are required.");
+                return;
+            }
+
+            // Email Validation
+            const emailPattern = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
+            if (!email.match(emailPattern)) {
+                alert("Please enter a valid email address.");
+                return;
+            }
+
+            // Phone Validation (10-digit number)
+            const phonePattern = /^[0-9]{10}$/;
+            if (!phone.match(phonePattern)) {
+                alert("Please enter a valid 10-digit phone number.");
+                return;
+            }
+
+            alert("Form submitted successfully!");
+            this.submit(); // If all validations pass, submit form
+        });
+    });
+</script>
+
+{% endblock %}

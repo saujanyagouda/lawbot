@@ -1,0 +1,114 @@
+{% extends 'base1.html' %}
+{% load static %}
+{% block content %}
+<div>
+    <main class="p-4 md:p-6">
+        <!-- Stats Overview -->
+        <div class="stats-container">
+            <div class="stats-box">
+                <i><img src="{% static 'images/clients.png' %}" alt="cases" style="width: 40px; height: 40px;"></i>
+                <div class="stat-value">{{ stats.total_clients }}</div>
+                <div class="stat-label">Clients</div>
+                <div class="stat-para">Total Clients</div>
+            </div>
+            <div class="stats-box">
+                <i><img src="{% static 'images/case.png' %}" alt="cases" style="width: 40px; height: 40px;"></i>
+                <div class="stat-value">{{ stats.total_cases }}</div>
+                <div class="stat-label">Cases</div>
+                <div class="stat-para">Total cases</div>
+            </div>
+            <div class="stats-box">
+                <i><img src="{% static 'images/impotant.png' %}" alt="cases" style="width: 40px; height: 40px;"></i>
+                <div class="stat-value">{{ stats.important_cases }}</div>
+                <div class="stat-label">Important Cases</div>
+                <div class="stat-para">Total important cases</div>
+            </div>
+            <div class="stats-box">
+                <i><img src="{% static 'images/archived.png' %}" alt="cases" style="width: 40px; height: 40px;"></i>
+                <div class="stat-value">{{ stats.archived_cases }}</div>
+                <div class="stat-label">Archived Cases</div>
+                <div class="stat-para">Total completed cases</div>
+            </div>
+        </div>
+        
+        <div class="container">
+            <div class="grid-container">
+                <!-- Recent Cases -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2><i class="icon"><img src="{% static 'images/cases.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Recent Cases</h2>
+                        <a href="{% url 'cases' %}" class="view-all">View All →</a>
+                    </div>
+                    <div class="card-content">
+                        {% for case in cases %}
+                        <div class="item">
+                            <h3>{{ case.client_name }}</h3>
+                            <p>Case: {{ case.case_type }}</p>
+                            <p>Court: {{ case.court }}</p>
+                            <div class="item-meta">
+                                <i class="icon"><img src="{% static 'images/clock.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Next Date: {{ case.next_date }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+    
+                <!-- Urgent Tasks -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2><i class="icon"><img src="{% static 'images/urgent.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Urgent Tasks</h2>
+                        <a href="{% url 'task' %}" class="view-all">View All →</a>
+                    </div>
+                    <div class="card-content">
+                        {% for task in tasks %}
+                        <div class="item">
+                            <h3>{{ task.task_name }}</h3>
+                            <p>Related to: {{ task.related_to.name }}</p>
+                            <p>Case: {{ task.related_to.case_number }}</p>
+                            <div class="item-meta">
+                                <i class="icon"><img src="{% static 'images/clock.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Deadline: {{ task.deadline }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+    
+                <!-- Today's Appointments -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2><i class="icon"><img src="{% static 'images/calender.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Today's Appointments</h2>
+                        <a href="{% url 'appointments' %}" class="view-all">View All →</a>
+                    </div>
+                    <div class="card-content">
+                        {% for appointment in appointments %}
+                        <div class="item">
+                            <h3>{{ appointment.client_name }}</h3>
+                            <div class="item-meta">
+                                <i class="icon"><img src="{% static 'images/clock.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> {{ appointment.time }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+    
+                <!-- Recent Clients -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2><i class="icon"><img src="{% static 'images/client.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Recent Clients</h2>
+                        <a href="{% url 'clients' %}" class="view-all">View All →</a>
+                    </div>
+                    <div class="card-content">
+                        {% for client in clients %}
+                        <div class="item">
+                            <h3>{{ client.name }}</h3>
+                            <p>Mobile: {{ client.mobile }}</p>
+                            <p>Cases: {{ client.cases }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+        </div>
+      </main>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<!-- About LawBot Section -->
+<section id="about-lawbot" class="about-section">
+    <div class="about-container">
+        <div class="about-text">
+            <h2>About LawBot</h2>
+            <p>
+                LawBot is an innovative AI-powered legal assistant designed to streamline case management, 
+                automate documentation, and provide intelligent insights for law firms. Our mission is to make legal 
+                operations seamless, secure, and highly efficient.
+            </p>
+            <p>
+                Whether you are managing multiple cases, scheduling appointments, or collaborating with your team, 
+                LawBot ensures smooth operations with cutting-edge technology.
+            </p>
+            <ul>
+                <li>Automated Case Tracking & Management</li>
+                <li>AI-Powered Legal Document Generation</li>
+                <li>Secure and Encrypted Client Data</li>
+                <li>24/7 Virtual Legal Assistant Support</li>
+            </ul>
+            <a href="{% url 'contact' %}"><button id="learnMoreBtn" class="btn-primary">Learn More</button></a>
+        </div>
+        <div class="about-image">
+            <img src="{% static 'images/\homepho.webp' %}" alt="About LawBot">
+        </div>
+    </div>
+</section>
+
+<!-- Why Choose Us Section -->
+<section id="why-choose-us" class="choose-us-section">
+    <div class="choose-us-container">
+        <div class="choose-us-image">
+            <img src="{% static 'images/lll.jpg' %}" alt="Why Choose Us">
+        </div>
+        <div class="choose-us-content">
+            <h2>Why Partner with Us?</h2>
+            <p>
+                LawBot is the future of legal practice automation. We provide AI-driven insights, secure data management, 
+                and effortless case tracking to help legal professionals focus on what matters—advocating for their clients.
+            </p>
+            <ul>
+                <li>Efficient Client & Case Management</li>
+                <li>AI-Based Legal Research & Analysis</li>
+                <li>Integrated Appointment Scheduling</li>
+                <li>Secure Cloud-Based Storage</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<script >
+   
+    
+</script>
+
+{% endblock %}

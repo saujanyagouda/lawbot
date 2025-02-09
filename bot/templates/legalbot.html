@@ -1,0 +1,62 @@
+{% extends 'base1.html' %}
+{% load static %}
+{% block content %}
+<div class="chat-container">
+    <div class="chat-box">
+        <div class="message bot">
+            <span class="bot-icon">🤖</span>
+            <div class="bot-text">Hi! How can I assist you today?</div>
+        </div>
+    </div>
+    <div class="chat-input-area">
+        <label for="file-upload" class="upload-icon">📁</label>
+        <input type="file" id="file-upload" hidden>
+        <input type="text" id="user-input" placeholder="Ask your question...">
+        <button id="send-btn"><span class="send-icon">✈</span> Send</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const chatBox = document.querySelector(".chat-box");
+        const userInput = document.getElementById("user-input");
+        const sendBtn = document.getElementById("send-btn");
+        const fileUpload = document.getElementById("file-upload");
+
+        function appendMessage(sender, message) {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message", sender);
+
+            if (sender === "bot") {
+                messageDiv.innerHTML = '<span class="bot-icon">🤖</span><div class="bot-text">' + message + '</div>';
+            } else {
+                messageDiv.innerHTML = '<div class="user-text">' + message + '</div>';
+            }
+
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
+        }
+
+        sendBtn.addEventListener("click", function () {
+            const userText = userInput.value.trim();
+            if (userText === "") return;
+            appendMessage("user", userText);
+            userInput.value = "";
+
+            setTimeout(() => {
+                appendMessage("bot", "How can I help you today?");
+            }, 500);
+        });
+
+        userInput.addEventListener("keypress", function (event) {
+            if (event.key === "Enter") sendBtn.click();
+        });
+
+        fileUpload.addEventListener("change", function () {
+            if (this.files.length > 0) {
+                appendMessage("user", `📂 Uploaded: ${this.files[0].name}`);
+            }
+        });
+    });
+</script>
+{% endblock%}
