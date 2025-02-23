@@ -5,9 +5,24 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate, login as auth_login , logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.core.mail import send_mail
+from django.conf import settings
+from .models import Client, Task 
+
 import json
 
 User = get_user_model()
+
+def email_send(subject,message,email):
+    try:
+        from_email = settings.EMAIL_HOST_USER
+        recipient_list = [email]
+
+        send_mail(subject, message, from_email, recipient_list)
+        return 'Email sent Successfully'
+    except Exception as e:
+        print(f'Got some error as: {e}')
+        return 'Email sent Successfully'
 
 def home(request):
     return render(request, 'home.html',{"show_footer":True})
@@ -16,6 +31,18 @@ def about(request):
     return render(request, 'about.html',{"show_footer":True})
 
 def contact(request):
+    if request.method=="POST":
+        first_name = request.POST.get("first-name",None)
+        last_name = request.POST.get("last-name",None)
+        phone = request.POST.get("phone", " ")
+        email = request.POST.get("email",None)
+        subject = request.POST.get("subject"," ")
+        message = request.POST.get("message"," ")
+        if not first_name or not email:
+            messages.error(request, "Name and Email is mandatory")
+            return redirect("contact")
+        new_message = f'Hello,\nYou have received a new contact form submission.\n\nName: {first_name} {last_name}\nPhone: {phone}\nEmail: {email}\nSubject: {subject}\nMessage: {message}'
+        email_send('New Contact Form Submission',new_message,'goudasaujanya@gmail.com')
     return render(request, 'contact.html',{"show_footer":True})
 
 def login(request):
@@ -62,6 +89,11 @@ def signup(request):
             phone_number=phone_number,
             password=make_password(password)  # Hash password before saving
         )
+        subject = "Welcome to Law Bot!"
+        message = f"Hi {name},\n\nThank you for signing up for Law Bot. We’re excited to have you on board!\n\nBest Regards,\nThe Law Bot Team"
+        from_email = settings.EMAIL_HOST_USER
+        res = email_send(subject,message,email)
+        print(res)
         messages.success(request, "Account created successfully! Please log in.")
         return redirect("login")  # Redirect to login page
 
@@ -71,7 +103,7 @@ def signup(request):
 @login_required
 def dashboard(request):
     stats = {
-        'total_clients': 100,
+        'total_clients': Client.objects.count(),
         'total_cases': 200,
         'important_cases': 10,
         'archived_cases': 5,
@@ -135,9 +167,151 @@ def dashboard(request):
 
 @login_required
 def task(request):
-    return render(request,'task.html',{"show_footer":False})
+    if request.method == "POST":
+        print(request.POST)
+        task_name = request.POST.get("taskName", "").strip()
+        related_to = request.POST.get("relatedTo", "").strip()
+        case_number = request.POST.get("caseNumber", "").strip()
+        start_date = request.POST.get("startDate", "").strip()
+        deadline = request.POST.get("deadline", "").strip()
+        priority = request.POST.get("priority", "").strip()
+        status = request.POST.get("status", "").strip()
+
+        print(f"Task Name: {task_name}, Related To: {related_to}, Case Number: {case_number}")
+        print(f"Start Date: {start_date}, Deadline: {deadline}, Priority: {priority}, Status: {status}")
+
+
+        if not all([task_name, related_to, case_number, start_date, deadline, priority]):
+            messages.error(request, "All fields are required.")
+            return redirect("task")
+
+        if Task.objects.filter(task_name=task_name, related_to=related_to, case_number=case_number, start_date=start_date).exists():
+            messages.error(request, "A task with these details already exists.")
+            return redirect("task")
+
+        # Save the task
+        Task.objects.create(
+            task_name=task_name,
+            related_to=related_to,
+            case_number=case_number,
+            start_date=start_date,
+            deadline=deadline,
+            priority=priority,
+            status="Pending"
+        )
+        print(f"✅ Task Saved: {task}")
+        messages.success(request, "Task added successfully!")
+        return redirect("task")
+        
+    
+    elif request.method == "DELETE":
+        try:
+            data = json.loads(request.body)
+
+            task_name = data.get("task_name")
+            related_to = data.get("related_to")
+            case_number = data.get("case_number")
+            start_date = data.get("start_date")
+            deadline = data.get("deadline")
+            priority = data.get("priority")
+            status = data.get("status")
+
+            task = Task.objects.filter(task_name=task_name, related_to=related_to, case_number=
+            case_number,start_date=start_date,deadline=deadline,priority=priority,status=status).first()
+            if task:
+                task.delete()
+                return JsonResponse({"success": True}, safe=False)
+            else:
+                return JsonResponse({"success": False, "error": "Task not found"}, safe=False, status=404)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "Invalid JSON"}, safe=False, status=400)
+
+    elif request.method == "GET":
+        db_tasks = Task.objects.all()
+        print(f"📊 Tasks Retrieved: {db_tasks}")  # Debugging
+        return render(request, "task.html", {"show_footer": False, "tasks": db_tasks})
+    
+    
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+
+            task = get_object_or_404(Task, id=data.get("taskId"))
+            task.name = data.get("taskName", task.name)
+            task.case_number = data.get("caseNumber", task.case_number)
+            task.related_to = data.get("relatedTo", task.related_to)
+            task.start_date = data.get("startDate", task.start_date)
+            task.deadline = data.get("deadline", task.deadline)
+            task.priority = data.get("priority", task.priority)
+            task.status = data.get("status", task.status)
+
+            task.save()
+
+            return JsonResponse({"success": True})
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+    return JsonResponse({"success": False, "error": "Invalid request method"}, status=400)
+@login_required   
 def clients(request):
-    return render(request,'clients.html',{"show_footer":False})
+    if request.method == "POST":
+        print(request.POST)  # Debugging
+
+        name = request.POST.get("clientName", "").strip()
+        phone_number = request.POST.get("mobileNumber", "").strip()
+        email = request.POST.get("email", "").strip()
+
+        print(f'name is {name}')
+        print(f'phone_number is {phone_number}')
+        print(f'email is {email}')
+
+        if not name or not phone_number or not email:
+            messages.error(request, "All fields are required.")
+            return redirect("clients")
+
+        if Client.objects.filter(email_address=email).exists():
+            messages.error(request, "A client with this email already exists.")
+            return redirect("clients")
+
+        if Client.objects.filter(phone_number=phone_number).exists():
+            messages.error(request, "A client with this phone number already exists.")
+            return redirect("clients")
+
+        # Save the client
+        Client.objects.create(
+            name=name,
+            phone_number=phone_number,
+            email_address=email,
+            status=True,
+            is_active=True,
+        )
+        messages.success(request, "Client added successfully!")
+        return redirect("clients")
+    elif request.method =='DELETE':
+        try:
+            data =json.loads(request.body)
+            name = data.get("name")
+            email = data.get("email")
+            phone_number = data.get("phone_number")
+            client = Client.objects.filter(name=name, email_address=email, phone_number=phone_number).first()
+            if client:
+                client.delete()
+                return JsonResponse({"success": True}, safe=False)  
+                 
+        except:
+            return JsonResponse({"success": False, "error": "Invalid JSON"}, safe=False, status=400) 
+
+    elif request.method == 'GET':
+        db_clients = Client.objects.filter(is_active=True)
+        return render(request, "clients.html", {"show_footer": False,"clients":db_clients})
+    elif request.method =='PUT':
+        name = request.PUT.get("clientName", "").strip()
+        phone_number =request.PUT.get("mobileNumber","").strip()
+        client = Client.objects.filter( phone_number=phone_number).first()
+        return redirect("clients")
+
+
 
 def setting(request):
     return render(request,'setting.html',{"show_footer":False})

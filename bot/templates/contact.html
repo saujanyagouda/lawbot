@@ -17,7 +17,7 @@
     <div class="contact-page">
         <section class="contact-form-section">
             <h2>Get in Touch</h2>
-            <form class="contact-form" id="contactForm" action="#" method="post">
+            <form class="contact-form" id="contactForm" action="{% url 'contact' %}" method="post">
                 {% csrf_token %}
                 <div class="form-row">
                     <div class="form-group">
@@ -43,9 +43,9 @@
                     <label for="subject">Subject</label>
                     <select id="subject" name="subject" required>
                         <option value="">--Select--</option>
-                        <option value="general">General Inquiry</option>
-                        <option value="legal">Legal Assistance</option>
-                        <option value="appointment">Schedule an Appointment</option>
+                        <option value="General_Inquiry">General Inquiry</option>
+                        <option value="Legal_Assistance">Legal Assistance</option>
+                        <option value="Schedule_an_Appointment">Schedule an Appointment</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -60,7 +60,7 @@
             <h2>Our Offices</h2>
             <div class="office-info">
                 <h3>Mumbai Office</h3>
-                <p>Vaswani Mansion, Office No. 17 & 18 3rd Floor, 120 Dinshaw Vachha Road, Churchgate, Mumbai – 400 020</p>
+                <p>Plot No.71, 72, TV Chidambaran Marg, near Champaklal Industries, Air Force Quarters, Sion East, Sion, Mumbai, Maharashtra 400022</p>
                 <p>+91 22 4340 8500</p>
                 <p><a href="mailto:mumbai@phoenixlegal.in">mumbai@phoenixlegal.in</a></p>
             </div>

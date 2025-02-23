@@ -33,11 +33,12 @@
                 </tr>
             </thead>
             <tbody>
+                {% for client in clients %}
                 <tr>
-                    <td>1</td>
-                    <td>Will Cc Smith</td>
-                    <td>0907937399</td>
-                    <td>1</td>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ client.name }}</td>
+                    <td>{{ client.phone_number }}</td>
+                    <td>{{ client.email_address }}</td>
                     <td>
                         <label class="switch">
                             <input type="checkbox" checked>
@@ -46,11 +47,21 @@
                     </td>
                     <td>
                         <img src="{% static 'images/edit.png' %}" alt="edit" class="edit-icon" style="width: 20px; height: 20px; cursor: pointer;">
-                         <img src="{% static 'images/delet.png' %}" alt="Delete" class="delete-icon" style="width: 20px; height: 20px; cursor: pointer;">
-                        
+                        <img src="{% static 'images/delet.png' %}" 
+                        alt="Delete" 
+                        class="delete-icon" 
+                        data-name="{{ client.name }}" 
+                        data-email="{{ client.email_address }}" 
+                        data-phone="{{ client.phone_number }}" 
+                        style="width: 20px; height: 20px; cursor: pointer;">
                         
                     </td>
                 </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">No clients found</td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
 
@@ -72,14 +83,19 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="addClientForm">
+                <form id="addClientForm", method="post", action="{% url 'clients' %}">
+                    {% csrf_token %}
                     <div class="mb-3">
                         <label for="clientName" class="form-label">Client Name</label>
-                        <input type="text" class="form-control" id="clientName" required>
+                        <input type="text" class="form-control" id="clientName" name="clientName" required>
                     </div>
                     <div class="mb-3">
                         <label for="mobileNumber" class="form-label">Mobile Number</label>
-                        <input type="text" class="form-control" id="mobileNumber" required>
+                        <input type="text" class="form-control" id="mobileNumber" name="mobileNumber" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
                     </div>
                     <div class="d-flex justify-content-end">
                         <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
@@ -142,29 +158,59 @@
                 alert("Please fill in all fields.");
                 return;
             }
-    
-            // TODO: You can send this data to your Django backend using AJAX or a form submission
-    
-            // Close the modal after successful submission
+            this.submit();
+            const addClientModal = new bootstrap.Modal(document.getElementById("addClientModal"));
             addClientModal.hide();
     
-            // Reset form fields
-            document.getElementById("addClientForm").reset();
+            // Reset form fields after submission
+            this.reset();
     
-            alert("Client added successfully!");
         });
     });
-    document.addEventListener("DOMContentLoaded", function () {
-        const deleteIcons = document.querySelectorAll(".delete-icon");
     
-        deleteIcons.forEach(icon => {
-            icon.addEventListener("click", function () {
-                if (confirm("Are you sure you want to delete this client?")) {
-                    this.closest("tr").remove(); // Removes the closest row (tr)
-                }
+        document.addEventListener("DOMContentLoaded", function () {
+            const deleteIcons = document.querySelectorAll(".delete-icon");
+            
+        
+            deleteIcons.forEach(icon => {
+                icon.addEventListener("click", function () {
+                    event.stopPropagation();
+                    const clientName = this.getAttribute("data-name");
+                    const clientEmail = this.getAttribute("data-email");
+                    const clientPhone = this.getAttribute("data-phone");
+        
+                    if (confirm(`Are you sure you want to delete ${clientName}?`)) {
+                        fetch("{% url 'clients' %}", {
+                            method: "DELETE",
+                            headers: {
+                                "X-CSRFToken": "{{ csrf_token }}",
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                name: clientName,
+                                email: clientEmail,
+                                phone_number: clientPhone
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                this.closest("tr").remove();  // Remove row from table
+                                alert("Client deleted successfully!");
+                            } else {
+                                alert("Error deleting client: " + data.error);
+                            }
+                        })
+                        .catch(error => {
+                            alert("Something went wrong: " + error);
+                        });
+                        this.removeEventListener("click", arguments.callee);
+                    }
+                }); { once: true }
             });
         });
-    });
+        
+        
     
     document.addEventListener("DOMContentLoaded", function () {
         const editIcons = document.querySelectorAll(".edit-icon");
