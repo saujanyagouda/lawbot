@@ -45,10 +45,8 @@
                     <td><span class="badge badge-urgent">{{Task.priority}}</span></td>
                     <td><span class="badge badge-in-progress">{{Task.status}}</span></td>
                     <td>
-                        <img src="{% static 'images/edit.png' %}" alt="edit" class="edit-icon" style="width: 20px; height: 20px; cursor: pointer;">
-                        <img src="{% static 'images/delet.png' %}" 
-                        alt="Delete" 
-                        class="delete-icon"
+                        <img src="{% static 'images/edit.png' %}" alt="edit" class="edit-icon" 
+                        data-task-id="{{ Task.id }}" 
                         data-task-name="{{ Task.task_name }}"  
                         data-related-to="{{ Task.related_to }}" 
                         data-case-number="{{ Task.case_number }}" 
@@ -56,6 +54,12 @@
                         data-deadline="{{ Task.deadline|date:'Y-m-d' }}" 
                         data-priority="{{ Task.priority}}"
                         data-status="{{ Task.status}}"
+                        style="width: 20px; height: 20px; cursor: pointer;">
+                        <img src="{% static 'images/delet.png' %}" 
+                        alt="Delete" 
+                        class="delete-icon"
+                        data-task-id="{{ Task.id }}"  
+                        data-task-name="{{ Task.task_name }}"  
                         style="width: 20px; height: 20px; cursor: pointer;">
                     </td>
                 </tr>
@@ -233,25 +237,12 @@ document.addEventListener("DOMContentLoaded", function () {
         icon.addEventListener("click", function (event) {
             event.stopPropagation();
 
-            const taskName = this.getAttribute("data-task-name");
-            const caseNumber = this.getAttribute("data-case-number");
-            const relatedTo = this.getAttribute("data-related-to");
-            const startDate = this.getAttribute("data-start-date");
-            const deadline = this.getAttribute("data-deadline");
-            const priority = this.getAttribute("data-priority");
-            const status = this.getAttribute("data-status");
+            const taskid = this.getAttribute("data-task-id");
+            const taskname = this.getAttribute("data-task-name");
+            
+            
 
-            // Convert date to "YYYY-MM-DD"
-            function formatDate(dateString) {
-                if (!dateString) return null;
-                const date = new Date(dateString);
-                return date.toISOString().split('T')[0];
-            }
-
-            const formattedStartDate = formatDate(startDate);
-            const formattedDeadline = formatDate(deadline);
-
-            if (confirm(`Are you sure you want to delete task: ${taskName}?`)) {
+            if (confirm(`Are you sure you want to delete task: ${taskname}?`)) {
                 fetch("{% url 'task' %}", {  // Ensure the correct Django URL
                     method: "DELETE",
                     headers: {
@@ -259,13 +250,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        task_name: taskName,
-                        case_number: caseNumber,
-                        related_to: relatedTo,
-                        start_date: formattedStartDate,
-                        deadline: formattedDeadline,
-                        priority: priority,
-                        status: status
+                        taskId: taskid
                     })
                 })
                 .then(response => response.json())
@@ -293,7 +278,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const editTaskForm = document.getElementById("editTaskForm");
 
     // Get input fields
-    const editTaskId = document.getElementById("editTaskId");
     const editTaskName = document.getElementById("editTaskName");
     const editRelatedTo = document.getElementById("editRelatedTo");
     const editCaseNumber = document.getElementById("editCaseNumber");
@@ -308,16 +292,14 @@ document.addEventListener("DOMContentLoaded", function () {
     editTaskIcons.forEach(icon => {
         icon.addEventListener("click", function () {
             currentRow = this.closest("tr");
-
-            // Get task data from table row
-            editTaskId.value = currentRow.dataset.taskId; // Assuming task ID is stored as a data attribute
-            editTaskName.value = currentRow.cells[1].textContent;
-            editRelatedTo.value = currentRow.cells[2].textContent;
-            editCaseNumber.value = currentRow.cells[3].textContent;
-            editStartDate.value = currentRow.cells[4].textContent;
-            editDeadline.value = currentRow.cells[5].textContent;
-            editPriority.value = currentRow.cells[6].textContent;
-            editStatus.value = currentRow.cells[7].textContent;
+            editTaskId.value = this.getAttribute("data-task-id");
+            editTaskName.value = this.getAttribute("data-task-name");
+            editCaseNumber.value = this.getAttribute("data-case-number");
+            editRelatedTo.value = this.getAttribute("data-related-to");
+            editStartDate.value = this.getAttribute("data-start-date");
+            editDeadline.value = this.getAttribute("data-deadline");
+            editPriority.value = this.getAttribute("data-priority");
+            editStatus.value = this.getAttribute("data-status");
 
             editTaskModal.show();
         });
@@ -352,14 +334,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (data.success) {
                     // Update table row with new values
                     currentRow.cells[1].textContent = taskData.taskName;
-                    currentRow.cells[2].textContent = taskData.relatedTo;
-                    currentRow.cells[3].textContent = taskData.caseNumber;
-                    currentRow.cells[4].textContent = taskData.startDate;
-                    currentRow.cells[5].textContent = taskData.deadline;
-                    currentRow.cells[6].textContent = taskData.priority;
-                    currentRow.cells[7].textContent = taskData.status;
+                    currentRow.cells[2].textContent = `${taskData.relatedTo}\n ${taskData.caseNumber}`;
+                    currentRow.cells[3].textContent = taskData.startDate;
+                    currentRow.cells[4].textContent = taskData.deadline;
+                    currentRow.cells[5].textContent = taskData.priority;
+                    currentRow.cells[6].textContent = taskData.status;
 
                     editTaskModal.hide();
+                    location.reload();
                 } else {
                     alert("Failed to update task.");
                 }

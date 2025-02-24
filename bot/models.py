@@ -52,4 +52,30 @@ class Task(models.Model):
     def __str__(self):
         return f"{self.task_name} ({self.case_number})"
 
+class Case(models.Model):
+    STATUS_CHOICES = [
+        ('on-trial', 'On-Trial'),
+        ('closed', 'Closed'),
+        ('pending', 'Pending'),
+        ('dismissed', 'Dismissed'),
+    ]
+
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="cases")
+    case_number = models.CharField(max_length=50, unique=True)  # No: 542344
+    case_type = models.CharField(max_length=100)  # Case: Murder
+
+    court_name = models.CharField(max_length=255)  # Court: RTC - Branch 4
+    court_number = models.CharField(max_length=50)  # No: 3123
+    magistrate_name = models.CharField(max_length=255)  # Magistrate: Judge Marvin Tapuyo
+
+    petitioner = models.CharField(max_length=255)  # Will Cc Smith
+    respondent = models.CharField(max_length=255)  # Will Smith
+
+    next_hearing_date = models.DateField()  # 07-20-2021
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='on-trial')
+
+    def __str__(self):
+        return f"{self.client_name} - {self.case_number}"
+
+
 

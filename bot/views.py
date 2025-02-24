@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
@@ -7,11 +7,86 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import Client, Task 
+from .models import Client, Task, Case
+import random
 
 import json
 
 User = get_user_model()
+
+case_types = [
+    "Criminal",
+    "Civil",
+    "Constitutional",
+    "Administrative & Service",
+    "Company & Business Law",
+    "Taxation",
+    "Arbitration & Mediation",
+    "Environmental Law",
+    "Intellectual Property"
+]
+
+courts = [
+    "Supreme Court",
+    "High Court",
+    "District Court",
+    "Sessions Court",
+    "Family Court",
+    "Consumer Court"
+]
+
+magistrates = [
+    "Justice Ramesh Gupta",
+    "Justice Priya Sharma",
+    "Justice Anil Mehta",
+    "Justice Kavita Rao",
+    "Justice Vinay Patel",
+    "Justice Pooja Deshmukh",
+    "Justice Arjun Verma",
+    "Justice Sanjay Nair"
+]
+
+# Generating dummy court data
+dummy_courts = [
+    {
+        "court": "Supreme Court",
+        "number": random.randint(50, 60),
+        "magistrate": random.choice(magistrates)
+    },
+    {
+        "court": "Supreme Court",
+        "number": random.randint(50, 60),
+        "magistrate": random.choice(magistrates)
+    },
+    {
+        "court": "High Court",
+        "number": random.randint(50, 60),
+        "magistrate": random.choice(magistrates)
+    },
+    {
+        "court": "District Court",
+        "number": random.randint(50, 60),
+        "magistrate": random.choice(magistrates)
+    },
+    {
+        "court": "Sessions Court",
+        "number": random.randint(50, 60),
+        "magistrate": random.choice(magistrates)
+    },
+    {
+        "court": "Family Court",
+        "number": random.randint(50, 60),
+        "magistrate": random.choice(magistrates)
+    },
+    {
+        "court": "Consumer Court",
+        "number": random.randint(50, 60),
+        "magistrate": random.choice(magistrates)
+    }
+    
+]
+
+
 
 def email_send(subject,message,email):
     try:
@@ -202,43 +277,37 @@ def task(request):
         print(f"✅ Task Saved: {task}")
         messages.success(request, "Task added successfully!")
         return redirect("task")
-        
-    
     elif request.method == "DELETE":
         try:
             data = json.loads(request.body)
+            task_id = data.get("taskId")
+            print(f'GOT TASK ID AS {task_id}')
+            if not task_id:
+                return JsonResponse({"success": False, "error": "Task ID is required"}, status=400)
+            task = get_object_or_404(Task, id=task_id)
+            task.delete()
 
-            task_name = data.get("task_name")
-            related_to = data.get("related_to")
-            case_number = data.get("case_number")
-            start_date = data.get("start_date")
-            deadline = data.get("deadline")
-            priority = data.get("priority")
-            status = data.get("status")
-
-            task = Task.objects.filter(task_name=task_name, related_to=related_to, case_number=
-            case_number,start_date=start_date,deadline=deadline,priority=priority,status=status).first()
-            if task:
-                task.delete()
-                return JsonResponse({"success": True}, safe=False)
-            else:
-                return JsonResponse({"success": False, "error": "Task not found"}, safe=False, status=404)
+            return JsonResponse({"success": True})
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Invalid JSON"}, safe=False, status=400)
-
     elif request.method == "GET":
         db_tasks = Task.objects.all()
         print(f"📊 Tasks Retrieved: {db_tasks}")  # Debugging
+        for i in db_tasks:
+            print(i.id)
         return render(request, "task.html", {"show_footer": False, "tasks": db_tasks})
-    
-    
-    if request.method == 'PUT':
+    elif request.method == 'PUT':
         try:
             data = json.loads(request.body)
-
+            print(f'GOT DATA AS:{data}')
             task = get_object_or_404(Task, id=data.get("taskId"))
-            task.name = data.get("taskName", task.name)
+            print('WE are here')
+            task.task_name = data.get("taskName", task.task_name)
             task.case_number = data.get("caseNumber", task.case_number)
             task.related_to = data.get("relatedTo", task.related_to)
             task.start_date = data.get("startDate", task.start_date)
@@ -250,9 +319,11 @@ def task(request):
 
             return JsonResponse({"success": True})
         except Exception as e:
+            print(f'GOT error as {e}')
             return JsonResponse({"success": False, "error": str(e)}, status=400)
 
     return JsonResponse({"success": False, "error": "Invalid request method"}, status=400)
+
 @login_required   
 def clients(request):
     if request.method == "POST":
@@ -329,6 +400,54 @@ def appointments(request):
     return render(request,'appointments.html',{"show_footer":False})
 
 def cases(request):
+    if request.method == 'GET':
+        db_clients = Client.objects.filter(is_active=True)
+        db_cases = Case.objects.all() #TODO add isactive
+        return render(request,'cases.html',{"show_footer":False,
+        'clients':db_clients,
+        'case_type':case_types,
+        'courts':dummy_courts,
+        'db_cases':db_cases})
+    elif request.method == 'POST':
+        try:
+            data =json.loads(request.body)
+            print(f'Got data as {data}')
+            if Case.objects.filter(case_number=data['CaseNumber']).exists():
+                return JsonResponse({"success": False, "error": f"A case with {data['CaseNumber']} Number already exists."}, safe=False, status=400) 
+    
+            client = Client.objects.filter(id=data['ClientId']).first()
+            if not client:
+                return JsonResponse({"success": False, "error": f"Client is not available."}, safe=False, status=400) 
+            Case.objects.create(
+                client = client,
+                case_number = data['CaseNumber'],
+                case_type = data['caseType'],
+                court_name = data['courtDropdown'],
+                court_number = data['courtNoDropdown'],
+                magistrate_name = 'Rajesh',
+                petitioner = data['Petitioner'],
+                respondent = data['Respondent'],
+                next_hearing_date = data['Date'],
+                status = data['Status']
+            )
+            return JsonResponse({"success": True})
+        except Exception as e:
+            print(f'Got error as {e}')
+            return JsonResponse({"success": False, "error": "Invalid JSON"}, safe=False, status=400) 
+    elif request.method == 'PUT':
+        return render(request,'cases.html',{"show_footer":False})
+    elif request.method == 'DELETE':
+        try:
+            data = json.loads(request.body)
+            case_id = data.get("caseId")
+            print(f'GOT case ID AS {case_id}')
+            if not case_id:
+                return JsonResponse({"success": False, "error": "Case ID is required"}, status=400)
+            task = get_object_or_404(Case, id=case_id)
+            task.delete()
+            return JsonResponse({"success": True})
+        except:
+            return JsonResponse({"success": False, "error": "Invalid JSON"}, safe=False, status=400) 
     return render(request,'cases.html',{"show_footer":False})
     
 def logout(request):
