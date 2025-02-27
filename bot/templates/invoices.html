@@ -1,0 +1,418 @@
+{% extends 'base1.html' %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2>Invoices</h2>
+        <button class="btn btn-primary" id="addInvoiceBtn">+ Add Invoice</button>
+    </div>
+
+    <!-- Date Filters -->
+    <div class="row mt-3">
+        <div class="col-md-3">
+            <label for="fromDate" class="form-label">From Date:</label>
+            <input type="date" id="fromDate" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <label for="toDate" class="form-label">To Date:</label>
+            <input type="date" id="toDate" class="form-control">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-danger me-2" id="clearFilter">Clear</button>
+            <button class="btn btn-success" id="searchInvoices">🔍 Search</button>
+        </div>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="table-container mt-3">
+        <div class="d-flex justify-content-between">
+            <div>
+                Show 
+                <select id="entries" class="form-select d-inline-block w-auto">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select> 
+                entries
+            </div>
+            <input type="text" id="search" class="form-control w-auto" placeholder="Search...">
+        </div>
+
+        <table class="table table-bordered mt-3">
+            <thead class="table-light">
+                <tr>
+                    <th>No</th>
+                    <th>Invoice Number</th>
+                    <th>Client Name</th>
+                    <th>Service</th>
+                    <th>Total</th>
+                    <th>Paid</th>
+                    <th>Due</th>
+                    <th>Due Date</th>
+                    <th>Payment Mode</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in invoices %}
+                <tr data-invoice-id="{{ invoice.id }}">
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        <a href="{% url 'download_invoice' invoice_id=invoice.id %}" target="_blank">
+                            {{ invoice.invoice_number }}
+                        </a>
+                    </td>
+                    <td>{{ invoice.client.name }}</td>
+                    <td>{{ invoice.service }}</td>
+                    <td>{{ invoice.total_amount }}</td>
+                    <td>{{ invoice.paid_amount }}</td>
+                    <td>{{ invoice.due_amount }}</td>
+                    <td>{{ invoice.due_date|date:"m-d-Y" }}</td>
+                    <td>{{ invoice.payment_mode }}</td>
+                    <td>
+                        {% if invoice.payment_status == 'PENDING' %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% elif invoice.payment_status == 'PARTIAL' %}
+                            <span class="badge bg-info">Partially Paid</span>
+                        {% elif invoice.payment_status == 'PAID' %}
+                            <span class="badge bg-success">Fully Paid</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <img src="{% static 'images/edit.png' %}" alt="edit" class="edit-icon" style="width: 20px; height: 20px; cursor: pointer;" data-invoice-id="{{ invoice.id }}">
+                        <img src="{% static 'images/delet.png' %}" alt="Delete" class="delete-icon" style="width: 20px; height: 20px; cursor: pointer;" data-invoice-id="{{ invoice.id }}">
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="11" class="text-center">No invoices found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="d-flex justify-content-between">
+            <span>Showing {{ invoices|length }} of {{ total_invoices }} entries</span>
+            <div>
+                <button class="btn btn-light btn-sm">Previous</button>
+                <button class="btn btn-light btn-sm">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Invoice Modal -->
+<div class="modal fade" id="addInvoiceModal" tabindex="-1" aria-labelledby="addInvoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addInvoiceModalLabel">Add New Invoice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addInvoiceForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="clientSelect" class="form-label">Client</label>
+                        <select class="form-control" id="clientSelect" name="client" required>
+                            <option value="">Select a client</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">{{ client.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="service" class="form-label">Service</label>
+                        <input type="text" class="form-control" id="service" name="service" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="totalAmount" class="form-label">Total Amount</label>
+                            <input type="number" step="0.01" class="form-control" id="totalAmount" name="totalAmount" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="paidAmount" class="form-label">Paid Amount</label>
+                            <input type="number" step="0.01" class="form-control" id="paidAmount" name="paidAmount" value="0.00">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentMode" class="form-label">Payment Mode</label>
+                        <select class="form-control" id="paymentMode" name="paymentMode" required>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="Online Payment">Online Payment</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dueDate" class="form-label">Due Date</label>
+                        <input type="date" class="form-control" id="dueDate" name="dueDate" required>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Invoice Modal -->
+<div class="modal fade" id="editInvoiceModal" tabindex="-1" aria-labelledby="editInvoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editInvoiceModalLabel">Edit Invoice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editInvoiceForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="editInvoiceId" name="invoiceId">
+                    <div class="mb-3">
+                        <label for="editInvoiceNumber" class="form-label">Invoice Number</label>
+                        <input type="text" class="form-control" id="editInvoiceNumber" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editClientName" class="form-label">Client</label>
+                        <input type="text" class="form-control" id="editClientName" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editService" class="form-label">Service</label>
+                        <input type="text" class="form-control" id="editService" name="service" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editTotalAmount" class="form-label">Total Amount</label>
+                            <input type="number" step="0.01" class="form-control" id="editTotalAmount" name="totalAmount" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editPaidAmount" class="form-label">Paid Amount</label>
+                            <input type="number" step="0.01" class="form-control" id="editPaidAmount" name="paidAmount">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPaymentMode" class="form-label">Payment Mode</label>
+                        <select class="form-control" id="editPaymentMode" name="paymentMode" required>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="Online Payment">Online Payment</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDueDate" class="form-label">Due Date</label>
+                        <input type="date" class="form-control" id="editDueDate" name="dueDate" required>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Open Add Invoice Modal
+    const addInvoiceBtn = document.getElementById("addInvoiceBtn");
+    const addInvoiceModal = new bootstrap.Modal(document.getElementById("addInvoiceModal"));
+    const editInvoiceModal = new bootstrap.Modal(document.getElementById("editInvoiceModal"));
+    
+    addInvoiceBtn.addEventListener("click", function () {
+        addInvoiceModal.show();
+    });
+
+    // Add Invoice Form Submit
+    const addInvoiceForm = document.getElementById("addInvoiceForm");
+    addInvoiceForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        
+        const formData = {
+            client: document.getElementById("clientSelect").value,
+            service: document.getElementById("service").value,
+            totalAmount: document.getElementById("totalAmount").value,
+            paidAmount: document.getElementById("paidAmount").value,
+            paymentMode: document.getElementById("paymentMode").value,
+            dueDate: document.getElementById("dueDate").value
+        };
+        
+        fetch('/invoice/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addInvoiceModal.hide();
+                window.location.reload();
+            } else {
+                alert(data.error || "Failed to create invoice");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("An error occurred while creating the invoice");
+        });
+    });
+
+    // Delete Invoice
+    const deleteIcons = document.querySelectorAll(".delete-icon");
+    deleteIcons.forEach(icon => {
+        icon.addEventListener("click", function () {
+            const invoiceId = this.getAttribute("data-invoice-id");
+            
+            if (confirm("Are you sure you want to delete this invoice?")) {
+                fetch('/invoice/', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        invoiceId: invoiceId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert(data.error || "Failed to delete invoice");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("An error occurred while deleting the invoice");
+                });
+            }
+        });
+    });
+
+    // Edit Invoice
+    const editIcons = document.querySelectorAll(".edit-icon");
+    editIcons.forEach(icon => {
+        icon.addEventListener("click", function () {
+            const invoiceId = this.getAttribute("data-invoice-id");
+            
+            // Fetch invoice details
+            fetch(`/invoice/get/${invoiceId}/`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const invoice = data.invoice;
+                    
+                    document.getElementById("editInvoiceId").value = invoice.id;
+                    document.getElementById("editInvoiceNumber").value = invoice.invoice_number;
+                    document.getElementById("editClientName").value = invoice.client_name;
+                    document.getElementById("editService").value = invoice.service;
+                    document.getElementById("editTotalAmount").value = invoice.total_amount;
+                    document.getElementById("editPaidAmount").value = invoice.paid_amount;
+                    document.getElementById("editPaymentMode").value = invoice.payment_mode;
+                    document.getElementById("editDueDate").value = invoice.due_date;
+                    
+                    editInvoiceModal.show();
+                } else {
+                    alert(data.error || "Failed to fetch invoice details");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("An error occurred while fetching invoice details");
+            });
+        });
+    });
+
+    // Edit Invoice Form Submit
+    const editInvoiceForm = document.getElementById("editInvoiceForm");
+    editInvoiceForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        
+        const invoiceId = document.getElementById("editInvoiceId").value;
+        const formData = {
+            invoiceId: invoiceId,
+            service: document.getElementById("editService").value,
+            totalAmount: document.getElementById("editTotalAmount").value,
+            paidAmount: document.getElementById("editPaidAmount").value,
+            paymentMode: document.getElementById("editPaymentMode").value,
+            dueDate: document.getElementById("editDueDate").value
+        };
+        
+        fetch('/invoice/', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                editInvoiceModal.hide();
+                window.location.reload();
+            } else {
+                alert(data.error || "Failed to update invoice");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("An error occurred while updating the invoice");
+        });
+    });
+
+    // Search functionality
+    const searchInput = document.getElementById("search");
+    searchInput.addEventListener("keyup", function() {
+        const searchValue = this.value.toLowerCase();
+        const rows = document.querySelectorAll("tbody tr");
+        
+        rows.forEach(row => {
+            const invoiceNumber = row.querySelector("td:nth-child(2)").textContent.toLowerCase();
+            const clientName = row.querySelector("td:nth-child(3)").textContent.toLowerCase();
+            const service = row.querySelector("td:nth-child(4)").textContent.toLowerCase();
+            
+            if (invoiceNumber.includes(searchValue) || clientName.includes(searchValue) || service.includes(searchValue)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    });
+
+    // Date filter functionality
+    const searchInvoicesBtn = document.getElementById("searchInvoices");
+    searchInvoicesBtn.addEventListener("click", function() {
+        const fromDate = document.getElementById("fromDate").value;
+        const toDate = document.getElementById("toDate").value;
+        
+        window.location.href = `/invoice/?from_date=${fromDate}&to_date=${toDate}`;
+    });
+
+    // Clear filter
+    const clearFilterBtn = document.getElementById("clearFilter");
+    clearFilterBtn.addEventListener("click", function() {
+        document.getElementById("fromDate").value = "";
+        document.getElementById("toDate").value = "";
+        window.location.href = "/invoice/";
+    });
+});
+</script>
+
+{% endblock %}

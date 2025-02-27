@@ -4,10 +4,11 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate, login as auth_login , logout as auth_logout
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, FileResponse
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import Client, Task, Case, Appointment
+from django.utils import timezone
+from .models import Client, Task, Case, Appointment, Invoice
 import random
 
 import json
@@ -177,6 +178,7 @@ def signup(request):
 
 @login_required
 def dashboard(request):
+    full_name = request.user.get_full_name()
     stats = {
         'total_clients': Client.objects.count(),
         'total_cases': 200,
@@ -238,10 +240,12 @@ def dashboard(request):
         'tasks': tasks,
         'appointments': appointments,
         'stats': stats,
+        "username":full_name
     })
 
 @login_required
 def task(request):
+    full_name = request.user.get_full_name()
     if request.method == "POST":
         print(request.POST)
         task_name = request.POST.get("taskName", "").strip()
@@ -300,7 +304,7 @@ def task(request):
         print(f"📊 Tasks Retrieved: {db_tasks}")  # Debugging
         for i in db_tasks:
             print(i.id)
-        return render(request, "task.html", {"show_footer": False, "tasks": db_tasks})
+        return render(request, "task.html", {"show_footer": False, "tasks": db_tasks,"username":full_name})
     elif request.method == 'PUT':
         try:
             data = json.loads(request.body)
@@ -374,8 +378,9 @@ def clients(request):
             return JsonResponse({"success": False, "error": "Invalid JSON"}, safe=False, status=400) 
 
     elif request.method == 'GET':
+        full_name = request.user.get_full_name()
         db_clients = Client.objects.filter(is_active=True)
-        return render(request, "clients.html", {"show_footer": False,"clients":db_clients})
+        return render(request, "clients.html", {"show_footer": False,"clients":db_clients,"username":full_name})
     elif request.method =='PUT':
         name = request.PUT.get("clientName", "").strip()
         phone_number =request.PUT.get("mobileNumber","").strip()
@@ -387,8 +392,163 @@ def clients(request):
 def setting(request):
     return render(request,'setting.html',{"show_footer":False})
 
-def invoice(request):
-    return render(request,'invoice.html',{"show_footer":False})
+@login_required
+def invoices(request):
+    if request.method == 'GET':
+        full_name = request.user.get_full_name()
+        # Get date range filters if provided
+        from_date = request.GET.get('from_date')
+        to_date = request.GET.get('to_date')
+        
+        # Start with all invoices
+        queryset = Invoice.objects.all()
+        
+        # Apply date filters if provided
+        if from_date:
+            queryset = queryset.filter(created_date__date__gte=from_date)
+        if to_date:
+            queryset = queryset.filter(created_date__date__lte=to_date)
+            
+        # Order by created date (newest first)
+        invoices_list = queryset.order_by('-created_date')
+        
+        # Get all active clients for the dropdown
+        clients = Client.objects.filter(is_active=True)
+        
+        context = {
+            "show_footer": False,
+            "invoices": invoices_list,
+            "total_invoices": Invoice.objects.count(),
+            "clients": clients,
+            "username":full_name
+        }
+        
+        return render(request, 'invoices.html', context)
+        
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            print(f'Got data as {data}')
+            
+            client = Client.objects.filter(id=data['client']).first()
+            if not client:
+                return JsonResponse({"success": False, "error": "Client is not available."}, status=400)
+                
+            # Create new invoice
+            total_amount = float(data['totalAmount'])
+            paid_amount = float(data['paidAmount'])
+            
+            # Create new invoice
+            Invoice.objects.create(
+                client=client,
+                total_amount=total_amount,
+                paid_amount=paid_amount,
+                service=data['service'],
+                payment_mode=data['paymentMode'],
+                due_date=data['dueDate']
+                # due_amount and payment_status will be calculated in save method
+            )
+            
+            return JsonResponse({"success": True})
+        except Exception as e:
+            print(f'Got error as {e}')
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+            
+    elif request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            print(f'GOT DATA AS: {data}')
+            
+            invoice = get_object_or_404(Invoice, id=data.get("invoiceId"))
+            print('Updating invoice...')
+            
+            # Update the invoice fields
+            invoice.service = data.get("service", invoice.service)
+            invoice.total_amount = float(data.get("totalAmount", invoice.total_amount))
+            invoice.paid_amount = float(data.get("paidAmount", invoice.paid_amount))
+            invoice.payment_mode = data.get("paymentMode", invoice.payment_mode)
+            invoice.due_date = data.get("dueDate", invoice.due_date)
+            
+            # Save the invoice (due_amount and payment_status will be updated automatically)
+            invoice.save()
+            
+            return JsonResponse({"success": True})
+        except Exception as e:
+            print(f'GOT ERROR AS: {e}')
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+            
+    elif request.method == 'DELETE':
+        try:
+            data = json.loads(request.body)
+            invoice_id = data.get("invoiceId")
+            print(f'GOT invoice ID AS {invoice_id}')
+            
+            if not invoice_id:
+                return JsonResponse({"success": False, "error": "Invoice ID is required"}, status=400)
+                
+            invoice = get_object_or_404(Invoice, id=invoice_id)
+            invoice.delete()
+            
+            return JsonResponse({"success": True})
+        except Exception as e:
+            print(f'GOT ERROR AS: {e}')
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+            
+    return render(request, 'invoices.html', {"show_footer": False})
+
+# Additional endpoint to get invoice details for editing
+def get_invoice(request, invoice_id):
+    if request.method == 'GET':
+        full_name = request.user.get_full_name()
+        try:
+            invoice = get_object_or_404(Invoice, id=invoice_id)
+            
+            # Format the data for frontend use
+            invoice_data = {
+                "id": invoice.id,
+                "invoice_number": invoice.invoice_number,
+                "client_name": invoice.client.name,
+                "total_amount": float(invoice.total_amount),
+                "paid_amount": float(invoice.paid_amount),
+                "due_amount": float(invoice.due_amount),
+                "service": invoice.service,
+                "payment_mode": invoice.payment_mode,
+                "payment_status": invoice.payment_status,
+                "due_date": invoice.due_date.strftime('%Y-%m-%d')
+            }
+            
+            return JsonResponse({"success": True, "invoice": invoice_data})
+        except Exception as e:
+            print(f'Error fetching invoice: {e}')
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+    
+    return JsonResponse({"success": False, "error": "Invalid request method"}, status=400)
+
+# Function to download invoice PDF
+def download_invoice(request, invoice_id):
+    # For now, we're just serving a static PDF file
+    # Later this can be replaced with dynamic PDF generation
+    try:
+        invoice = get_object_or_404(Invoice, id=invoice_id)
+        
+        # Path to a static invoice.pdf file
+        # In a real application, you would generate this dynamically
+        # file_path = os.path.join(settings.MEDIA_ROOT, 'invoices', 'invoice.pdf')
+        
+        # For now, as a placeholder, return a simple text response
+        response = HttpResponse(f"Invoice #{invoice.invoice_number} for {invoice.client.name}",
+                                content_type="text/plain")
+        response['Content-Disposition'] = f'attachment; filename="invoice_{invoice.invoice_number}.txt"'
+        return response
+        
+        # Uncomment when you have a real PDF file
+        # if os.path.exists(file_path):
+        #     return FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+        # else:
+        #     return HttpResponse("Invoice PDF not found", status=404)
+    except Exception as e:
+        print(f'Error downloading invoice: {e}')
+        return HttpResponse(f"Error: {str(e)}", status=500)
 
 def teammember(request):
     return render(request,'teammember.html',{"show_footer":False})
@@ -396,8 +556,10 @@ def teammember(request):
 def legalbot(request):
     return render(request,'legalbot.html',{"show_footer":False})
 
+@login_required
 def appointments(request):
     if request.method == 'GET':
+        full_name = request.user.get_full_name()
         # Get date range filters if provided
         from_date = request.GET.get('from_date')
         to_date = request.GET.get('to_date')
@@ -422,6 +584,7 @@ def appointments(request):
             "appointments": appointments_list,
             "total_appointments": Appointment.objects.count(),
             "clients": clients,
+            "username":full_name
         }
         
         return render(request, 'appointments.html', context)
@@ -443,6 +606,8 @@ def appointments(request):
                 time=data['time'],
                 status=data['status']
             )
+            new_message = f' Topic: {data["topic"]}\n Date: {data["date"]}\n Time: {data["time"]}\n status: {data["status"]}'
+            email_send('You have a new Appointment Scheduled',new_message,'goudasaujanya@gmail.com')
             
             return JsonResponse({"success": True})
         except Exception as e:
@@ -511,15 +676,18 @@ def get_appointment(request, appointment_id):
     
     return JsonResponse({"success": False, "error": "Invalid request method"}, status=400)
 
+@login_required
 def cases(request):
     if request.method == 'GET':
+        full_name = request.user.get_full_name()
         db_clients = Client.objects.filter(is_active=True)
         db_cases = Case.objects.all() #TODO add isactive
         return render(request,'cases.html',{"show_footer":False,
         'clients':db_clients,
         'case_type':case_types,
         'courts':dummy_courts,
-        'db_cases':db_cases})
+        'db_cases':db_cases,
+        "username":full_name})
     elif request.method == 'POST':
         try:
             data =json.loads(request.body)

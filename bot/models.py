@@ -17,6 +17,9 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.email
+    
+    def get_full_name(self):  # Use a properly named method
+        return f"{self.username}".strip()
 
 class Client(models.Model):
     name = models.CharField(max_length=255)
@@ -108,3 +111,55 @@ class Appointment(models.Model):
         return appointment_datetime < timezone.now()
 
 
+class Invoice(models.Model):
+    PAYMENT_STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('PARTIAL', 'Partially Paid'),
+        ('PAID', 'Fully Paid'),
+    ]
+    
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='invoices')
+    invoice_number = models.CharField(max_length=20, unique=True)  # Will store as INV-XXXXX
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    paid_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    due_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    service = models.CharField(max_length=255)
+    payment_mode = models.CharField(max_length=255)  
+    due_date = models.DateTimeField()
+    
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+    
+    payment_status = models.CharField(
+        max_length=10, 
+        choices=PAYMENT_STATUS_CHOICES, 
+        default='PENDING'
+    )
+    
+    invoice_file = models.FileField(upload_to='invoices/', blank=True, null=True)
+    
+    def __str__(self):
+        return f"{self.invoice_number} - {self.client.name}"
+    
+    def save(self, *args, **kwargs):
+        # Calculate due amount automatically
+        self.due_amount = self.total_amount - self.paid_amount
+        
+        # Set payment status based on amount paid
+        if self.paid_amount == 0:
+            self.payment_status = 'PENDING'
+        elif self.paid_amount < self.total_amount:
+            self.payment_status = 'PARTIAL'
+        else:
+            self.payment_status = 'PAID'
+            
+        # Generate invoice number if not provided
+        if not self.invoice_number:
+            last_invoice = Invoice.objects.all().order_by('-id').first()
+            if last_invoice:
+                last_id = int(last_invoice.invoice_number.split('-')[1])
+                self.invoice_number = f"INV-{last_id + 1:05d}"
+            else:
+                self.invoice_number = "INV-00001"
+                
+        super().save(*args, **kwargs)

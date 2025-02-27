@@ -16,7 +16,9 @@ urlpatterns = [
     path('appointments/',views.appointments,name='appointments'),
     path('appointments/get/<int:appointment_id>/', views.get_appointment, name='get_appointment'),
     path('teammember/',views.teammember,name='teammember'),
-    path('invoice/',views.invoice,name='invoice'),
-    path('forgot_password/',views.invoice,name='forgot-password'),
+    path('invoice/',views.invoices,name='invoice'),
+    path('invoice/get/<int:invoice_id>/', views.get_invoice, name='get_invoice'),
+    path('download_invoice/<int:invoice_id>/', views.download_invoice, name='download_invoice'),
+    path('forgot_password/',views.invoices,name='forgot-password'),
     path('logout/',views.logout,name='logout')
 ]
