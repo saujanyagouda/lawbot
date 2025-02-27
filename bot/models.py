@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 # Create your models here.
 class status(models.Model):
@@ -77,5 +78,33 @@ class Case(models.Model):
     def __str__(self):
         return f"{self.client_name} - {self.case_number}"
 
+
+class Appointment(models.Model):
+    STATUS_CHOICES = [
+        ('OPEN', 'Open'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+        ('RESCHEDULED', 'Rescheduled'),
+    ]
+    
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='appointments')
+    date = models.DateField()
+    time = models.TimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='OPEN')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    topic = models.TextField(blank=True, null=True)
+    
+    class Meta:
+        ordering = ['date', 'time']
+        
+    def __str__(self):
+        return f"{self.client.name} - {self.date} {self.time}"
+    
+    def is_past_due(self):
+        appointment_datetime = timezone.make_aware(
+            timezone.datetime.combine(self.date, self.time)
+        )
+        return appointment_datetime < timezone.now()
 
 

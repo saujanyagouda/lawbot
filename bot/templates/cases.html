@@ -81,6 +81,16 @@
                     <td>
                         <img src="{% static 'images/edit.png' %}" alt="edit" class="edit-icon"
                         data-case-id="{{ case.id }}"
+                        data-client-name="{{ case.client.name }}"
+                        data-client-id="{{ case.client.id }}"
+                        data-case-type="{{ case.case_type }}"
+                        data-case-number="{{ case.case_number }}"
+                        data-court="{{ case.court_name }}"
+                        data-court-no="{{ case.court_number }}"
+                        data-petitioner="{{ case.petitioner }}"
+                        data-respondent="{{ case.respondent }}"
+                        data-next-date="{{ case.next_hearing_date|date:'Y-m-d' }}"
+                        data-status="{{ case.status }}"
                         style="width: 20px; height: 20px; cursor: pointer;">
                         <img src="{% static 'images/delet.png' %}" alt="delete"
                          class="delete-icon"
@@ -203,99 +213,94 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editCaseModalLabel">Edit Case</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title">Edit Case</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <form id="addCaseForm" method="POST" action="{% url 'cases' %}">
-                    
-                    <div class="row">
-                        <div class="col-md-12">
-                            <label class="form-label">Client Name</label>
-                            <select class="form-control" id="clientName" name="clientName" required>
-                                {% for client in clients %}
-                                    <option value="{{ client.id }}">{{client.name}}</option>
-                                {% endfor %}
-                            </select>
-                            <input type="text" class="form-control" id="editclientName" name="editclientName" required>
-                        </div>
+            <form id="editCaseForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editCaseId" name="caseId">
+
+                    <div class="mb-3">
+                        <label>Client Name</label>
+                        <input type="text" id="editClientNameDisplay" class="form-control" readonly>
+                        <input type="hidden" id="editClientId" name="clientId">
                     </div>
-                    <div class="row mt-2">
-                        <div class="col-md-6">
-                            <label class="form-label">Case Type</label>
-                            <select class="form-control" id="caseType" name="caseType" required>
-                                {% for case in case_type %}
-                                    <option>{{case}}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Case Number</label>
-                            <input type="text" class="form-control" id="CaseNumber" name="CaseNumber" required>
-                        </div>
+
+                    <div class="mb-3">
+                        <label>Case Type</label>
+                        <select id="editCaseType" name="caseType" class="form-control" required>
+                            {% for case in case_type %}
+                                <option>{{ case }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <div class="row mt-2">
-                        <div class="col-md-6">
-                            <label class="form-label">Court</label>
-                            <select class="form-control" id="courtDropdown" name="courtDropdown" required>
-                                <option value="">Select Court</option>
-                                {% for court in courts %}
-                                    <option value="{{ court.court }}">{{ court.court }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label">Court No</label>
-                            <select class="form-control" id="courtNoDropdown" name="courtNoDropdown" required disabled>
-                                <option value="">Select Court No</option>
-                                {% for court in courts %}
-                                    <option value="{{ court.number }}" data-court="{{ court.court }}">{{ court.number }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+
+                    <div class="mb-3">
+                        <label>Case Number</label>
+                        <input type="text" id="editCaseNumber" name="caseNumber" class="form-control" required>
                     </div>
-                    <div class="row mt-2">
-                        <div class="col-md-6">
-                            <label class="form-label">Petitioner</label>
-                            <input type="text" class="form-control" id="Petitioner" name="Petitioner" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Respondent</label>
-                            <input type="text" class="form-control" id="Respondent" name="Respondent" required>
-                        </div>
+
+                    <div class="mb-3">
+                        <label>Court</label>
+                        <select id="editCourt" name="court" class="form-control" required>
+                            <option value="">Select Court</option>
+                            {% for court in courts %}
+                                <option value="{{ court.court }}">{{ court.court }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <div class="row mt-2">
-                        <div class="col-md-6">
-                            <label class="form-label">Next Date</label>
-                            <input type="date" class="form-control" id="Date" name="Date" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Status</label>
-                            <select class="form-control" id="Status" name="Status" required>
-                                <option>Pending</option>
-                                <option>Closed</option>
-                                <option>On-Trial</option>
-                                <option>Dismissed</option>
-                            </select>
-                        </div>
+
+                    <div class="mb-3">
+                        <label>Court No</label>
+                        <select id="editCourtNo" name="courtNo" class="form-control" required>
+                            <option value="">Select Court No</option>
+                            {% for court in courts %}
+                                <option value="{{ court.number }}" data-court="{{ court.court }}">{{ court.number }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Add</button>
+
+                    <div class="mb-3">
+                        <label>Petitioner</label>
+                        <input type="text" id="editPetitioner" name="petitioner" class="form-control" required>
                     </div>
-                </form>
-            </div>
-            
+
+                    <div class="mb-3">
+                        <label>Respondent</label>
+                        <input type="text" id="editRespondent" name="respondent" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Next Date</label>
+                        <input type="date" id="editNextDate" name="nextDate" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Status</label>
+                        <select id="editStatus" name="status" class="form-control" required>
+                            <option value="Pending">Pending</option>
+                            <option value="Closed">Closed</option>
+                            <option value="On-Trial">On-Trial</option>
+                            <option value="Dismissed">Dismissed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        // Add Case Modal - Court and Court No Linking
         let courtDropdown = document.getElementById("courtDropdown");
         let courtNoDropdown = document.getElementById("courtNoDropdown");
-        let allCourtNumbers = Array.from(courtNoDropdown.options); // Store original options
+        let allCourtNumbers = Array.from(courtNoDropdown.querySelectorAll("option")); // Store original options
 
         courtDropdown.addEventListener("change", function () {
             let selectedCourt = this.value; // Get selected court
@@ -309,22 +314,156 @@
                 courtNoDropdown.disabled = false;
                 allCourtNumbers.forEach(option => {
                     if (option.dataset.court === selectedCourt) {
-                        courtNoDropdown.appendChild(option);
+                        courtNoDropdown.appendChild(option.cloneNode(true));
                     }
                 });
             }
         });
-    });
-    document.addEventListener("DOMContentLoaded", function () {
+        
+        // Edit Case Modal Setup
+        const editCaseIcons = document.querySelectorAll(".edit-icon");
+        const editCaseModal = new bootstrap.Modal(document.getElementById("editCaseModal"));
+        const editCaseForm = document.getElementById("editCaseForm");
+    
+        // Get edit form input fields
+        const editCaseId = document.getElementById("editCaseId");
+        const editClientNameDisplay = document.getElementById("editClientNameDisplay");
+        const editClientId = document.getElementById("editClientId");
+        const editCaseType = document.getElementById("editCaseType");
+        const editCaseNumber = document.getElementById("editCaseNumber");
+        const editCourt = document.getElementById("editCourt");
+        const editCourtNo = document.getElementById("editCourtNo");
+        const editPetitioner = document.getElementById("editPetitioner");
+        const editRespondent = document.getElementById("editRespondent");
+        const editNextDate = document.getElementById("editNextDate");
+        const editStatus = document.getElementById("editStatus");
+    
+        // Store all court number options for the edit form
+        const editCourtNoOptions = Array.from(editCourtNo.querySelectorAll("option"));
+    
+        // Handle Court selection in Edit Modal
+        editCourt.addEventListener("change", function() {
+            let selectedCourt = this.value;
+            
+            // Reset the court number dropdown
+            editCourtNo.innerHTML = '<option value="">Select Court No</option>';
+            
+            if (selectedCourt) {
+                // Filter options based on selected court
+                editCourtNoOptions.forEach(option => {
+                    if (option.dataset.court === selectedCourt) {
+                        editCourtNo.appendChild(option.cloneNode(true));
+                    }
+                });
+            }
+        });
+    
+        let currentRow = null;
+    
+        // Open modal and fill in case details when edit icon is clicked
+        editCaseIcons.forEach(icon => {
+            icon.addEventListener("click", function () {
+                currentRow = this.closest("tr");
+    
+                // Get values from data attributes
+                const caseId = this.getAttribute("data-case-id");
+                const clientName = this.getAttribute("data-client-name");
+                const clientId = this.getAttribute("data-client-id");
+                const caseType = this.getAttribute("data-case-type");
+                const caseNumber = this.getAttribute("data-case-number");
+                const court = this.getAttribute("data-court");
+                const courtNo = this.getAttribute("data-court-no");
+                const petitioner = this.getAttribute("data-petitioner");
+                const respondent = this.getAttribute("data-respondent");
+                const nextDate = this.getAttribute("data-next-date");
+                const status = this.getAttribute("data-status");
+    
+                // Set values in the form
+                editCaseId.value = caseId;
+                editClientNameDisplay.value = clientName;
+                editClientId.value = clientId;
+                editCaseType.value = caseType;
+                editCaseNumber.value = caseNumber;
+                editCourt.value = court;
+                editPetitioner.value = petitioner;
+                editRespondent.value = respondent;
+                editNextDate.value = nextDate;
+                editStatus.value = status;
+                
+                // Trigger court change to filter court numbers
+                const courtSelectEvent = new Event('change');
+                editCourt.dispatchEvent(courtSelectEvent);
+                
+                // Set court number after filtering
+                setTimeout(() => {
+                    editCourtNo.value = courtNo;
+                }, 100);
+                
+                editCaseModal.show();
+            });
+        });
+    
+        // Handle form submission for editing case
+        editCaseForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+    
+            if (currentRow) {
+                const caseData = {
+                    caseId: editCaseId.value,
+                    clientId: editClientId.value, // Use the hidden client ID
+                    caseType: editCaseType.value,
+                    caseNumber: editCaseNumber.value,
+                    court: editCourt.value,
+                    courtNo: editCourtNo.value,
+                    petitioner: editPetitioner.value,
+                    respondent: editRespondent.value,
+                    nextDate: editNextDate.value,
+                    status: editStatus.value
+                };
+    
+                fetch("{% url 'cases' %}", {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCSRFToken()
+                    },
+                    body: JSON.stringify(caseData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("✅ Case updated successfully!");
+                        editCaseModal.hide();
+                        location.reload();
+                    } else {
+                        alert("❌ Failed to update case: " + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("❌ An error occurred while updating the case.");
+                });
+            }
+        });
+    
+        // Function to get CSRF token from cookies
+        function getCSRFToken() {
+            return document.cookie.split("; ")
+                .find(row => row.startsWith("csrftoken"))
+                ?.split("=")[1];
+        }
+        
+        // Add Case Modal and Form Handling
         const addCaseBtn = document.getElementById("addCaseBtn");
         const addCaseModal = new bootstrap.Modal(document.getElementById("addCaseModal"));
-        const formInputs = document.querySelectorAll("#addCaseModal input, #addCaseModal select");
-        const submitButton = document.querySelector("#addCaseModal .btn-primary");
-    
-        let editMode = false;
-        let editRow = null;
-
         
+        // Open modal for adding a new case
+        addCaseBtn.addEventListener("click", function () {
+            document.getElementById("addCaseForm").reset();
+            addCaseModal.show();
+        });
+    
+        // Add Case Form Submission
         document.getElementById("addCaseForm").addEventListener("submit", function (event) {
             event.preventDefault(); // Prevent default form submission behavior
             
@@ -338,14 +477,14 @@
             const Respondent = document.getElementById("Respondent").value;
             const Status = document.getElementById("Status").value;
             const Date = document.getElementById("Date").value;
-            console.log(`got selectedClientId as ${selectedClientId}`)
 
             // Simple validation
             if (selectedClientId.trim() === "" || courtDropdown.trim() === "" || courtNoDropdown.trim() === "" || Petitioner.trim() === "" || Respondent.trim() === "" || Status.trim() === "" || Date.trim() === "") {
                 alert("Please fill in all fields.");
                 return;
             }
-            fetch("{% url 'cases' %}", {  // Ensure the correct Django URL
+            
+            fetch("{% url 'cases' %}", {
                 method: "POST",
                 headers: {
                     "X-CSRFToken": "{{ csrf_token }}",
@@ -364,51 +503,30 @@
                 })
             })
             .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("✅ Case Added successfully!");
-                    } else {
-                        alert("❌ Error Creting Case: " + data.error);
-                    }
-                })
-                .catch(error => {
-                    alert("❌ Something went wrong: " + error);
-                });
+            .then(data => {
+                if (data.success) {
+                    alert("✅ Case Added successfully!");
+                    addCaseModal.hide();
+                    location.reload();
+                } else {
+                    alert("❌ Error Creating Case: " + data.error);
+                }
+            })
+            .catch(error => {
+                alert("❌ Something went wrong: " + error);
+            });
+        });
         
-            //this.submit();
-            addCaseModal.hide();
-            this.reset(); // Reset form fields after submission
-            });
-    
-        // Open modal for adding a new case
-        addCaseBtn.addEventListener("click", function () {
-            editMode = false;
-            submitButton.textContent = "Add";
-            formInputs.forEach(input => input.value = "");
-            addCaseModal.show();
-        });
-    
-        // Edit case logic
-        const editIcons = document.querySelectorAll(".edit-icon");
-        editIcons.forEach(icon => {
-            icon.addEventListener("click", function () {
-                
-                currentRow = this.closest("tr");
-                clientName.value = this.getAttribute("data-case-id")
-                addCaseModal.show();
-            });
-        });
-    
         // Delete case confirmation
         const deleteIcons = document.querySelectorAll(".delete-icon");
         deleteIcons.forEach(icon => {
-            icon.addEventListener("click", function () {
+            icon.addEventListener("click", function (event) {
                 event.stopPropagation();
 
                 const caseId = this.getAttribute("data-case-id");
                 const CaseNumber = this.getAttribute("data-case-number");
                 if (confirm(`Are you sure you want to delete this case ${CaseNumber}?`)) {
-                    fetch("{% url 'cases' %}", {  // Ensure the correct Django URL
+                    fetch("{% url 'cases' %}", {
                         method: "DELETE",
                         headers: {
                             "X-CSRFToken": "{{ csrf_token }}",
@@ -421,23 +539,18 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            this.closest("tr").remove();  // Remove row from table
-                            alert("✅ Task deleted successfully!");
+                            this.closest("tr").remove();
+                            alert("✅ Case deleted successfully!");
                         } else {
-                            alert("❌ Error deleting task: " + data.error);
+                            alert("❌ Error deleting case: " + data.error);
                         }
                     })
                     .catch(error => {
                         alert("❌ Something went wrong: " + error);
                     });
-                    this.removeEventListener("click", arguments.callee);
                 }
             });
         });
     });
-
-    </script>
-    
-
-
-{% endblock%}
+</script>
+{% endblock %}

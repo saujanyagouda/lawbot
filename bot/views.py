@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import Client, Task, Case
+from .models import Client, Task, Case, Appointment
 import random
 
 import json
@@ -387,8 +387,8 @@ def clients(request):
 def setting(request):
     return render(request,'setting.html',{"show_footer":False})
 
-def earnings(request):
-    return render(request,'earnings.html',{"show_footer":False})
+def invoice(request):
+    return render(request,'invoice.html',{"show_footer":False})
 
 def teammember(request):
     return render(request,'teammember.html',{"show_footer":False})
@@ -397,7 +397,119 @@ def legalbot(request):
     return render(request,'legalbot.html',{"show_footer":False})
 
 def appointments(request):
-    return render(request,'appointments.html',{"show_footer":False})
+    if request.method == 'GET':
+        # Get date range filters if provided
+        from_date = request.GET.get('from_date')
+        to_date = request.GET.get('to_date')
+        
+        # Start with all appointments
+        queryset = Appointment.objects.all()
+        
+        # Apply date filters if provided
+        if from_date:
+            queryset = queryset.filter(date__gte=from_date)
+        if to_date:
+            queryset = queryset.filter(date__lte=to_date)
+            
+        # Order by date and time
+        appointments_list = queryset.order_by('date', 'time')
+        
+        # Get all active clients for the dropdown
+        clients = Client.objects.filter(is_active=True)
+        
+        context = {
+            "show_footer": False,
+            "appointments": appointments_list,
+            "total_appointments": Appointment.objects.count(),
+            "clients": clients,
+        }
+        
+        return render(request, 'appointments.html', context)
+        
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            print(f'Got data as {data}')
+            
+            client = Client.objects.filter(id=data['client']).first()
+            if not client:
+                return JsonResponse({"success": False, "error": "Client is not available."}, status=400)
+                
+            # Create new appointment
+            Appointment.objects.create(
+                client=client,
+                topic=data.get('topic', ''),
+                date=data['date'],
+                time=data['time'],
+                status=data['status']
+            )
+            
+            return JsonResponse({"success": True})
+        except Exception as e:
+            print(f'Got error as {e}')
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+            
+    elif request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            print(f'GOT DATA AS: {data}')
+            
+            appointment = get_object_or_404(Appointment, id=data.get("appointmentId"))
+            print('Updating appointment...')
+            
+            # Update only the fields that can be edited
+            appointment.date = data.get("date", appointment.date)
+            appointment.time = data.get("time", appointment.time)
+            appointment.status = data.get("status", appointment.status)
+            
+            appointment.save()
+            
+            return JsonResponse({"success": True})
+        except Exception as e:
+            print(f'GOT ERROR AS: {e}')
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+            
+    elif request.method == 'DELETE':
+        try:
+            data = json.loads(request.body)
+            appointment_id = data.get("appointmentId")
+            print(f'GOT appointment ID AS {appointment_id}')
+            
+            if not appointment_id:
+                return JsonResponse({"success": False, "error": "Appointment ID is required"}, status=400)
+                
+            appointment = get_object_or_404(Appointment, id=appointment_id)
+            appointment.delete()
+            
+            return JsonResponse({"success": True})
+        except Exception as e:
+            print(f'GOT ERROR AS: {e}')
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+            
+    return render(request, 'appointments.html', {"show_footer": False})
+
+# Additional endpoint to get appointment details for editing
+def get_appointment(request, appointment_id):
+    if request.method == 'GET':
+        try:
+            appointment = get_object_or_404(Appointment, id=appointment_id)
+            
+            # Format the data for frontend use
+            appointment_data = {
+                "id": appointment.id,
+                "client_name": appointment.client.name,
+                "topic": appointment.topic,
+                "date": appointment.date.strftime('%Y-%m-%d'),
+                "time": appointment.time.strftime('%H:%M'),
+                "status": appointment.status
+            }
+            
+            return JsonResponse({"success": True, "appointment": appointment_data})
+        except Exception as e:
+            print(f'Error fetching appointment: {e}')
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+    
+    return JsonResponse({"success": False, "error": "Invalid request method"}, status=400)
 
 def cases(request):
     if request.method == 'GET':
@@ -435,7 +547,33 @@ def cases(request):
             print(f'Got error as {e}')
             return JsonResponse({"success": False, "error": "Invalid JSON"}, safe=False, status=400) 
     elif request.method == 'PUT':
-        return render(request,'cases.html',{"show_footer":False})
+        try:
+            data = json.loads(request.body)
+            print(f'GOT DATA AS: {data}')
+
+            case = get_object_or_404(Case, id=data.get("caseId"))
+            print('Updating case...')
+
+            case.client_id = data.get("clientId", case.client_id)
+            case.case_number = data.get("caseNumber", case.case_number)
+            case.case_type = data.get("caseType", case.case_type)
+            case.court_name = data.get("court", case.court_name)
+            case.court_number = data.get("courtNo", case.court_number)
+            case.petitioner = data.get("petitioner", case.petitioner)
+            case.respondent = data.get("respondent", case.respondent)
+            case.next_hearing_date = data.get("nextDate", case.next_hearing_date)
+            case.status = data.get("status", case.status)
+
+            case.save()
+
+            return JsonResponse({"success": True})
+        except Exception as e:
+            print(f'GOT ERROR AS: {e}')
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+        return JsonResponse({"success": False, "error": "Invalid request method"}, status=400)
+
+        
     elif request.method == 'DELETE':
         try:
             data = json.loads(request.body)

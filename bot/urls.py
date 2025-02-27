@@ -14,8 +14,9 @@ urlpatterns = [
     path('clients/',views.clients,name='clients'),
     path('cases/',views.cases,name='cases'),
     path('appointments/',views.appointments,name='appointments'),
+    path('appointments/get/<int:appointment_id>/', views.get_appointment, name='get_appointment'),
     path('teammember/',views.teammember,name='teammember'),
-    path('earnings/',views.earnings,name='earnings'),
-    path('forgat_password/',views.earnings,name='forgot-password'),
+    path('invoice/',views.invoice,name='invoice'),
+    path('forgot_password/',views.invoice,name='forgot-password'),
     path('logout/',views.logout,name='logout')
 ]
