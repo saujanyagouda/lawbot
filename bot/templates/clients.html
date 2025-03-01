@@ -244,5 +244,28 @@
         });
     });
     
+        document.addEventListener("DOMContentLoaded", function () {
+            const searchInput = document.getElementById("search");
+            const tableRows = document.querySelectorAll("tbody tr");
+    
+            searchInput.addEventListener("keyup", function () {
+                const query = searchInput.value.toLowerCase();
+    
+                tableRows.forEach(row => {
+                    const clientName = row.cells[1]?.textContent.toLowerCase() || "";
+                    const mobile = row.cells[2]?.textContent.toLowerCase() || "";
+                    const email = row.cells[3]?.textContent.toLowerCase() || "";
+    
+                    if (clientName.includes(query) || mobile.includes(query) || email.includes(query)) {
+                        row.style.display = "";
+                    } else {
+                        row.style.display = "none";
+                    }
+                });
+            });
+        });
+
+    
+    
 </script>
 {% endblock%}

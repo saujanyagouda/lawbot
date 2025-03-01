@@ -1,0 +1,14 @@
+# LangChain and LLM
+langchain>=0.1.0
+langchain-anthropic>=0.1.0
+langchain-community>=0.1.0
+langchain-core>=0.1.0
+
+# Memory and storage
+zep-python>=0.6.0
+
+# Search tools
+google-api-python-client
+
+# Django
+Django>=4.2

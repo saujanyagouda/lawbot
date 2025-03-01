@@ -551,6 +551,359 @@
                 }
             });
         });
+        
     });
+    // Enhance existing DOMContentLoaded listener by adding these features
+document.addEventListener("DOMContentLoaded", function () {
+    // ... existing code remains the same ...
+    
+    // Date Filter Functionality
+    const fromDateInput = document.getElementById("fromDate");
+    const toDateInput = document.getElementById("toDate");
+    const searchCasesBtn = document.getElementById("searchCases");
+    const clearFilterBtn = document.getElementById("clearFilter");
+    const casesTableBody = document.querySelector("table tbody");
+    const originalTableRows = Array.from(casesTableBody.querySelectorAll("tr")); // Store original table for reset
+    
+    // Filter cases by date range
+    searchCasesBtn.addEventListener("click", function() {
+        const fromDate = fromDateInput.value ? new Date(fromDateInput.value) : null;
+        const toDate = toDateInput.value ? new Date(toDateInput.value) : null;
+        
+        if (!fromDate && !toDate) {
+            alert("Please select at least one date to filter");
+            return;
+        }
+        
+        // Clear the table
+        casesTableBody.innerHTML = "";
+        
+        // Filter rows based on next hearing date
+        let filteredRows = originalTableRows.filter(row => {
+            const nextDateCell = row.querySelector("td:nth-child(5)");
+            
+            // Handle empty rows
+            if (!nextDateCell || row.cells.length < 5) {
+                return false;
+            }
+            
+            const nextDateText = nextDateCell.textContent.trim();
+            
+            // Skip if no date
+            if (!nextDateText) {
+                return false;
+            }
+            
+            // Parse date (assuming format YYYY-MM-DD)
+            const dateParts = nextDateText.split('-');
+            // If date format is different, adjust parsing accordingly
+            const rowDate = new Date(nextDateText);
+            
+            // Apply date range filter
+            if (fromDate && toDate) {
+                return rowDate >= fromDate && rowDate <= toDate;
+            } else if (fromDate) {
+                return rowDate >= fromDate;
+            } else if (toDate) {
+                return rowDate <= toDate;
+            }
+            
+            return true;
+        });
+        
+        // Display "No Cases Found" if no matches
+        if (filteredRows.length === 0) {
+            const noResultsRow = document.createElement("tr");
+            noResultsRow.innerHTML = '<td colspan="7">No cases found within selected date range.</td>';
+            casesTableBody.appendChild(noResultsRow);
+        } else {
+            // Update row numbers and add filtered rows back to table
+            filteredRows.forEach((row, index) => {
+                // Update row number in first column
+                const firstCell = row.querySelector("td:first-child");
+                if (firstCell) {
+                    firstCell.textContent = index + 1;
+                }
+                casesTableBody.appendChild(row.cloneNode(true));
+            });
+            
+            // Reattach event listeners to edit and delete icons in filtered results
+            reattachEventListeners();
+        }
+        
+        // Update showing entries text
+        document.querySelector(".d-flex .justify-content-between span").textContent = 
+            `Showing ${filteredRows.length} of ${originalTableRows.length} entries`;
+    });
+    
+    // Clear filters and restore original table
+    clearFilterBtn.addEventListener("click", function() {
+        fromDateInput.value = "";
+        toDateInput.value = "";
+        
+        // Restore original table
+        casesTableBody.innerHTML = "";
+        originalTableRows.forEach((row, index) => {
+            casesTableBody.appendChild(row.cloneNode(true));
+        });
+        
+        // Update showing entries text
+        document.querySelector(".d-flex .justify-content-between span").textContent = 
+            `Showing ${originalTableRows.length} of ${originalTableRows.length} entries`;
+        
+        // Reattach event listeners
+        reattachEventListeners();
+    });
+    
+    // Search Functionality
+    const searchInput = document.getElementById("search");
+    const entriesSelect = document.getElementById("entries");
+    
+    // Search on input change
+    searchInput.addEventListener("input", function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        if (searchTerm === "") {
+            // If search is cleared, show entries according to entries select
+            updateDisplayedEntries();
+            return;
+        }
+        
+        // Clear the table
+        casesTableBody.innerHTML = "";
+        
+        // Filter rows based on search term
+        let matchedRows = originalTableRows.filter(row => {
+            const rowText = row.textContent.toLowerCase();
+            return rowText.includes(searchTerm);
+        });
+        
+        // Display "No Cases Found" if no matches
+        if (matchedRows.length === 0) {
+            const noResultsRow = document.createElement("tr");
+            noResultsRow.innerHTML = '<td colspan="7">No cases found matching "' + searchTerm + '"</td>';
+            casesTableBody.appendChild(noResultsRow);
+        } else {
+            // Update row numbers and add matched rows back to table
+            matchedRows.forEach((row, index) => {
+                // Update row number in first column
+                const firstCell = row.querySelector("td:first-child");
+                if (firstCell) {
+                    firstCell.textContent = index + 1;
+                }
+                casesTableBody.appendChild(row.cloneNode(true));
+            });
+            
+            // Reattach event listeners
+            reattachEventListeners();
+        }
+        
+        // Update showing entries text
+        document.querySelector(".d-flex .justify-content-between span").textContent = 
+            `Showing ${matchedRows.length} of ${originalTableRows.length} entries`;
+    });
+    
+    // Show entries functionality
+    entriesSelect.addEventListener("change", function() {
+        updateDisplayedEntries();
+    });
+    
+    function updateDisplayedEntries() {
+        const entriesPerPage = parseInt(entriesSelect.value);
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        
+        // First apply search filter if there's a search term
+        let filteredRows = originalTableRows;
+        if (searchTerm !== "") {
+            filteredRows = originalTableRows.filter(row => {
+                const rowText = row.textContent.toLowerCase();
+                return rowText.includes(searchTerm);
+            });
+        }
+        
+        // Then limit by entries per page
+        const rowsToShow = filteredRows.slice(0, entriesPerPage);
+        
+        // Clear and rebuild table
+        casesTableBody.innerHTML = "";
+        
+        if (rowsToShow.length === 0) {
+            const noResultsRow = document.createElement("tr");
+            noResultsRow.innerHTML = '<td colspan="7">No cases found.</td>';
+            casesTableBody.appendChild(noResultsRow);
+        } else {
+            rowsToShow.forEach((row, index) => {
+                // Update row number
+                const firstCell = row.querySelector("td:first-child");
+                if (firstCell) {
+                    firstCell.textContent = index + 1;
+                }
+                casesTableBody.appendChild(row.cloneNode(true));
+            });
+            
+            // Reattach event listeners
+            reattachEventListeners();
+        }
+        
+        // Update showing entries text
+        document.querySelector(".d-flex .justify-content-between span").textContent = 
+            `Showing ${rowsToShow.length} of ${filteredRows.length} entries`;
+    }
+    
+    // Function to reattach event listeners to edit and delete icons after table update
+    function reattachEventListeners() {
+        // Reattach edit icon listeners
+        const editIcons = casesTableBody.querySelectorAll(".edit-icon");
+        editIcons.forEach(icon => {
+            icon.addEventListener("click", function() {
+                currentRow = this.closest("tr");
+    
+                // Get values from data attributes
+                const caseId = this.getAttribute("data-case-id");
+                const clientName = this.getAttribute("data-client-name");
+                const clientId = this.getAttribute("data-client-id");
+                const caseType = this.getAttribute("data-case-type");
+                const caseNumber = this.getAttribute("data-case-number");
+                const court = this.getAttribute("data-court");
+                const courtNo = this.getAttribute("data-court-no");
+                const petitioner = this.getAttribute("data-petitioner");
+                const respondent = this.getAttribute("data-respondent");
+                const nextDate = this.getAttribute("data-next-date");
+                const status = this.getAttribute("data-status");
+    
+                // Set values in the form
+                editCaseId.value = caseId;
+                editClientNameDisplay.value = clientName;
+                editClientId.value = clientId;
+                editCaseType.value = caseType;
+                editCaseNumber.value = caseNumber;
+                editCourt.value = court;
+                editPetitioner.value = petitioner;
+                editRespondent.value = respondent;
+                editNextDate.value = nextDate;
+                editStatus.value = status;
+                
+                // Trigger court change to filter court numbers
+                const courtSelectEvent = new Event('change');
+                editCourt.dispatchEvent(courtSelectEvent);
+                
+                // Set court number after filtering
+                setTimeout(() => {
+                    editCourtNo.value = courtNo;
+                }, 100);
+                
+                editCaseModal.show();
+            });
+        });
+        
+        // Reattach delete icon listeners
+        const deleteIcons = casesTableBody.querySelectorAll(".delete-icon");
+        deleteIcons.forEach(icon => {
+            icon.addEventListener("click", function(event) {
+                event.stopPropagation();
+
+                const caseId = this.getAttribute("data-case-id");
+                const CaseNumber = this.getAttribute("data-case-number");
+                if (confirm(`Are you sure you want to delete this case ${CaseNumber}?`)) {
+                    fetch("{% url 'cases' %}", {
+                        method: "DELETE",
+                        headers: {
+                            "X-CSRFToken": "{{ csrf_token }}",
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            caseId: caseId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.closest("tr").remove();
+                            alert("✅ Case deleted successfully!");
+                        } else {
+                            alert("❌ Error deleting case: " + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        alert("❌ Something went wrong: " + error);
+                    });
+                }
+            });
+        });
+    }
+    
+    // Implement pagination buttons
+    const prevButton = document.querySelector(".btn-light.btn-sm:first-of-type");
+    const nextButton = document.querySelector(".btn-light.btn-sm:last-of-type");
+    let currentPage = 0;
+    
+    prevButton.addEventListener("click", function() {
+        if (currentPage > 0) {
+            currentPage--;
+            updatePagination();
+        }
+    });
+    
+    nextButton.addEventListener("click", function() {
+        const entriesPerPage = parseInt(entriesSelect.value);
+        const maxPages = Math.ceil(originalTableRows.length / entriesPerPage);
+        
+        if (currentPage < maxPages - 1) {
+            currentPage++;
+            updatePagination();
+        }
+    });
+    
+    function updatePagination() {
+        const entriesPerPage = parseInt(entriesSelect.value);
+        const start = currentPage * entriesPerPage;
+        const end = start + entriesPerPage;
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        
+        // Apply search filter if there's a search term
+        let filteredRows = originalTableRows;
+        if (searchTerm !== "") {
+            filteredRows = originalTableRows.filter(row => {
+                const rowText = row.textContent.toLowerCase();
+                return rowText.includes(searchTerm);
+            });
+        }
+        
+        // Get paginated subset
+        const rowsToShow = filteredRows.slice(start, end);
+        
+        // Clear and rebuild table
+        casesTableBody.innerHTML = "";
+        
+        if (rowsToShow.length === 0) {
+            const noResultsRow = document.createElement("tr");
+            noResultsRow.innerHTML = '<td colspan="7">No cases found.</td>';
+            casesTableBody.appendChild(noResultsRow);
+        } else {
+            rowsToShow.forEach((row, index) => {
+                // Update row number to reflect overall position
+                const firstCell = row.querySelector("td:first-child");
+                if (firstCell) {
+                    firstCell.textContent = start + index + 1;
+                }
+                casesTableBody.appendChild(row.cloneNode(true));
+            });
+            
+            // Reattach event listeners
+            reattachEventListeners();
+        }
+        
+        // Update showing entries text
+        document.querySelector(".d-flex .justify-content-between span").textContent = 
+            `Showing ${start + 1} to ${Math.min(end, filteredRows.length)} of ${filteredRows.length} entries`;
+        
+        // Update button states
+        prevButton.disabled = currentPage === 0;
+        nextButton.disabled = end >= filteredRows.length;
+    }
+    
+    // Initialize the view
+    updateDisplayedEntries();
+});
 </script>
 {% endblock %}

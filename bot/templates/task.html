@@ -357,6 +357,95 @@ document.addEventListener("DOMContentLoaded", function () {
             ?.split("=")[1];
     }
 });
+// Add this code to your existing JavaScript at the bottom of your file
+document.addEventListener("DOMContentLoaded", function() {
+    const searchInput = document.getElementById("search");
+    const tableRows = document.querySelectorAll("tbody tr");
+    
+    searchInput.addEventListener("keyup", function() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            // Skip the "No tasks found" row if it exists
+            if (row.cells.length === 1 && row.cells[0].textContent.includes("No tasks found")) {
+                return;
+            }
+            
+            // Get text from each cell in the row
+            let rowText = "";
+            for (let i = 0; i < row.cells.length - 1; i++) { // Exclude the action column
+                rowText += row.cells[i].textContent.toLowerCase() + " ";
+            }
+            
+            // Show/hide row based on search term
+            if (rowText.includes(searchTerm)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+        
+        // Update the "Showing X of Y entries" text
+        updateEntriesInfo();
+    });
+    
+    // Also implement the entries dropdown functionality
+    const entriesSelect = document.getElementById("entries");
+    
+    entriesSelect.addEventListener("change", function() {
+        const maxEntries = parseInt(entriesSelect.value);
+        let visibleCount = 0;
+        
+        tableRows.forEach((row, index) => {
+            // Skip the "No tasks found" row if it exists
+            if (row.cells.length === 1 && row.cells[0].textContent.includes("No tasks found")) {
+                return;
+            }
+            
+            // First make all rows visible that match the search
+            const searchTerm = searchInput.value.toLowerCase();
+            let rowText = "";
+            for (let i = 0; i < row.cells.length - 1; i++) {
+                rowText += row.cells[i].textContent.toLowerCase() + " ";
+            }
+            
+            const matchesSearch = searchTerm === "" || rowText.includes(searchTerm);
+            
+            // Show/hide based on both search term and entries limit
+            if (matchesSearch && visibleCount < maxEntries) {
+                row.style.display = "";
+                visibleCount++;
+            } else {
+                row.style.display = "none";
+            }
+        });
+        
+        // Update the "Showing X of Y entries" text
+        updateEntriesInfo();
+    });
+    
+    // Function to update the "Showing X of Y entries" text
+    function updateEntriesInfo() {
+        const entriesInfoSpan = document.querySelector(".d-flex > span");
+        if (!entriesInfoSpan) return;
+        
+        const totalEntries = tableRows.length;
+        if (totalEntries === 1 && tableRows[0].cells.length === 1 && 
+            tableRows[0].cells[0].textContent.includes("No tasks found")) {
+            entriesInfoSpan.textContent = "Showing 0 of 0 entries";
+            return;
+        }
+        
+        const visibleEntries = Array.from(tableRows).filter(row => 
+            row.style.display !== "none"
+        ).length;
+        
+        entriesInfoSpan.textContent = `Showing ${visibleEntries} of ${totalEntries} entries`;
+    }
+    
+    // Initialize the entries info on page load
+    updateEntriesInfo();
+});
 
 </script>
 {% endblock %}

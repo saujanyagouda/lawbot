@@ -5,14 +5,20 @@
     <div class="chat-box">
         <div class="message bot">
             <span class="bot-icon">🤖</span>
-            <div class="bot-text">Hi! How can I assist you today?</div>
+            <div class="bot-text">Hi! I'm your legal assistant. I can help with client management, cases, appointments, invoices, tasks, and basic Indian law questions. How can I assist you today?</div>
         </div>
     </div>
     <div class="chat-input-area">
         <label for="file-upload" class="upload-icon">📁</label>
         <input type="file" id="file-upload" hidden>
         <input type="text" id="user-input" placeholder="Ask your question...">
-        <button id="send-btn"><span class="send-icon">✈</span> Send</button>
+        <button id="send-btn">
+            <span class="send-icon">✈</span>
+        </button>
+        
+    </div>
+    <div id="loading-indicator" style="display: none; text-align: center; margin-top: 10px;">
+        <div class="spinner">Processing...</div>
     </div>
 </div>
 
@@ -22,12 +28,32 @@
         const userInput = document.getElementById("user-input");
         const sendBtn = document.getElementById("send-btn");
         const fileUpload = document.getElementById("file-upload");
+        const loadingIndicator = document.getElementById("loading-indicator");
+        
+        // Track conversation ID for Zep memory
+        let conversationId = null;
+
+        // Initialize conversation
+        fetch("{% url 'initialize_chat' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            conversationId = data.conversation_id;
+            console.log("Conversation initialized with ID:", conversationId);
+        });
 
         function appendMessage(sender, message) {
             const messageDiv = document.createElement("div");
             messageDiv.classList.add("message", sender);
 
             if (sender === "bot") {
+                // Process markdown-like formatting in bot responses
+                message = processMarkdown(message);
                 messageDiv.innerHTML = '<span class="bot-icon">🤖</span><div class="bot-text">' + message + '</div>';
             } else {
                 messageDiv.innerHTML = '<div class="user-text">' + message + '</div>';
@@ -37,26 +63,258 @@
             chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
         }
 
-        sendBtn.addEventListener("click", function () {
+        function processMarkdown(text) {
+            // Convert markdown-style tables to HTML tables
+            if (text.includes('|')) {
+                const lines = text.split('\n');
+                let isTable = false;
+                let tableHtml = '<table class="bot-table">';
+                
+                for (let line of lines) {
+                    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+                        if (!isTable) {
+                            isTable = true;
+                        }
+                        
+                        const cells = line.split('|').filter(cell => cell.trim() !== '');
+                        
+                        if (line.includes('---')) {
+                            continue; // Skip separator row
+                        }
+                        
+                        tableHtml += '<tr>';
+                        for (let cell of cells) {
+                            tableHtml += '<td>' + cell.trim() + '</td>';
+                        }
+                        tableHtml += '</tr>';
+                    } else if (isTable) {
+                        tableHtml += '</table>';
+                        text = text.replace(/\|.*\|/gs, tableHtml);
+                        isTable = false;
+                    }
+                }
+                
+                if (isTable) {
+                    tableHtml += '</table>';
+                    text = text.replace(/\|.*\|/gs, tableHtml);
+                }
+            }
+            
+            // Basic markdown processing for bold, italic, etc.
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            text = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+            
+            return text;
+        }
+
+        function sendMessage() {
             const userText = userInput.value.trim();
             if (userText === "") return;
+            
             appendMessage("user", userText);
             userInput.value = "";
+            loadingIndicator.style.display = "block";
+            
+            // Get any attached file
+            const fileInput = document.getElementById('file-upload');
+            const formData = new FormData();
+            formData.append('message', userText);
+            formData.append('conversation_id', conversationId);
+            
+            if (fileInput.files.length > 0) {
+                formData.append('file', fileInput.files[0]);
+                fileInput.value = ''; // Clear the file input
+            }
+            
+            // Send request to backend
+            fetch("{% url 'chat_response' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingIndicator.style.display = "none";
+                appendMessage("bot", data.response);
+            })
+            .catch(error => {
+                loadingIndicator.style.display = "none";
+                console.error('Error:', error);
+                appendMessage("bot", "Sorry, I encountered an error processing your request. Please try again.");
+            });
+        }
 
-            setTimeout(() => {
-                appendMessage("bot", "How can I help you today?");
-            }, 500);
-        });
+        sendBtn.addEventListener("click", sendMessage);
 
         userInput.addEventListener("keypress", function (event) {
-            if (event.key === "Enter") sendBtn.click();
+            if (event.key === "Enter") sendMessage();
         });
 
         fileUpload.addEventListener("change", function () {
             if (this.files.length > 0) {
-                appendMessage("user", `📂 Uploaded: ${this.files[0].name}`);
+                const fileName = this.files[0].name;
+                appendMessage("user", `📂 Uploaded: ${fileName}`);
             }
         });
+        
+        // Function to get CSRF token from cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
     });
 </script>
-{% endblock%}
+
+<style>
+    .chat-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .chat-box {
+        height: 500px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: #f9f9f9;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        display: flex;
+        align-items: flex-start;
+    }
+    
+    .bot {
+        justify-content: flex-start;
+    }
+    
+    .user {
+        justify-content: flex-end;
+    }
+    
+    .bot-icon {
+        background-color: #007bff;
+        color: white;
+        padding: 8px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    
+    .bot-text {
+        background-color: #e9ecef;
+        padding: 10px;
+        border-radius: 10px;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+    
+    .user-text {
+        background-color: #007bff;
+        color: white;
+        padding: 10px;
+        border-radius: 10px;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+    
+    .chat-input-area {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-right: 20%;
+    }
+    
+    
+    #user-input {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    #send-btn {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 12px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 10;
+        
+        
+    }
+   
+    .send-icon {
+        font-size: 20px;
+        margin-right: 5px;
+    }
+    
+    
+    .upload-icon {
+        background-color: #28a745;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    
+    .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: #007bff;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .bot-table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0;
+    }
+    
+    .bot-table td, .bot-table th {
+        border: 1px solid #ddd;
+        padding: 8px;
+    }
+    
+    .bot-table tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+    
+    pre {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+    }
+</style>
+{% endblock %}

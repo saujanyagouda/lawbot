@@ -6,12 +6,15 @@ from django.contrib.auth import authenticate, login as auth_login , logout as au
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, FileResponse
 from django.core.mail import send_mail
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.utils import timezone
 from .models import Client, Task, Case, Appointment, Invoice
 import random
-
+import uuid
 import json
+from .langchain_bot import process_message
 
 User = get_user_model()
 
@@ -554,7 +557,30 @@ def teammember(request):
     return render(request,'teammember.html',{"show_footer":False})
 
 def legalbot(request):
-    return render(request,'legalbot.html',{"show_footer":False})
+    """Render the chatbot interface"""
+    return render(request, 'legalbot.html', {"show_footer": False})
+
+@require_POST
+def initialize_chat(request):
+    """Initialize a new chat session with a unique conversation ID"""
+    conversation_id = str(uuid.uuid4())
+    return JsonResponse({"conversation_id": conversation_id})
+
+@require_POST
+def chat_response(request):
+    """Process the chat message and return a response"""
+    message = request.POST.get('message', 'What is your name')
+    conversation_id = request.POST.get('conversation_id', '')
+    
+    # Handle file upload if present
+    uploaded_file = None
+    if 'file' in request.FILES:
+        uploaded_file = request.FILES['file']
+    
+    # Process the message using LangChain
+    response = process_message(message, conversation_id, uploaded_file)
+    
+    return JsonResponse({"response": response})
 
 @login_required
 def appointments(request):

@@ -74,11 +74,12 @@
 
         <!-- Dynamic Page Content -->
         <div class="container-fluid mt-4">
-            <div class="chat-button">
+            <a href="{% url 'legalbot' %}" class="chat-button">
                 <img src="{% static 'images/icons8-chat-bubble-50.png' %}" alt="Chat Icon">
-            </div>
+            </a>
             {% block content %}{% endblock %}
         </div>
+        
 
     </div>
 
@@ -102,7 +103,7 @@
             });
         });
         document.querySelector(".chat-button").addEventListener("click", function() {
-            alert("Open chatbox here!");
+            
         });
         
     </script>

@@ -163,3 +163,12 @@ class Invoice(models.Model):
                 self.invoice_number = "INV-00001"
                 
         super().save(*args, **kwargs)
+
+class ChatMessage(models.Model):
+    session_id = models.CharField(max_length=100, db_index=True)
+    role = models.CharField(max_length=20)  # 'human', 'ai', 'system'
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['created_at']
