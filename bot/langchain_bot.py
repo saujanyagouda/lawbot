@@ -1,51 +1,44 @@
 import os
 import json
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Union
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from pydantic.v1 import BaseModel, Field
 from langchain.tools import BaseTool, StructuredTool, tool
-from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
-# from langchain_community.chat_models import AzureChatOpenAI
-from langchain_openai import AzureChatOpenAI
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_community.chat_message_histories import ZepChatMessageHistory
 from langchain.memory import ConversationBufferMemory
 from langchain_core.runnables.history import RunnableWithMessageHistory
-# Import duckduckgo-search for open source search
 from duckduckgo_search import DDGS
 
 # Import your Django models
 from django.conf import settings
 from .models import Client, Case, Task, Appointment, Invoice, CustomUser
 
+# LLM setup
 llm = ChatOpenAI(
-    model="meta-llama/Llama-3.3-70B-Instruct-Turbo",  # Or use "meta-llama/Llama-2-7b-chat-hf"
-    openai_api_key="",
+    model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    openai_api_key="4691bd0a2080cfd38ae58e8645a07645faa98a9d9681dddba2b4490668d01e5b",
     openai_api_base="https://api.together.xyz/v1",
 )
-#4691bd0a2080cfd38ae58e8645a07645faa98a9d9681dddba2b4490668d01e5b
-# System prompt for the legal assistant
-SYSTEM_PROMPT = """You are a legal assistant for a law firm in India. You help lawyers manage their practice by providing information about clients, cases, appointments, invoices, and tasks. You can also answer basic questions about Indian law.
 
-When helping with practice management:
-1. Always verify information before taking action
-2. Be precise when dealing with dates, amounts, and legal information
-3. Format responses clearly, using tables when displaying multiple records
+# More concise system prompt
+SYSTEM_PROMPT = """You are a legal assistant for an Indian law firm. Help manage client information, cases, appointments, invoices, and tasks. Answer basic Indian law questions.
 
-When providing legal information:
-1. Clarify that you're providing general information, not legal advice
-2. Recommend consulting with a qualified attorney for specific legal matters
-3. Cite relevant laws or regulations when possible
-4. Always select the correct tool based on the user's request.
+RESPOND IN JSON FORMAT:
+1. For tool usage: {"type": "tool", "name": "tool_name", "params": {"param1": "value1"}}
+2. For direct answers: {"type": "final_answer", "content": "Your response here"}
 
-Remember that all information should be treated as confidential and you should follow all ethical guidelines for the legal profession in India.
+Tool selection guidelines:
+- For client listings/search: Use 'client_search' with empty query for "list all clients"
+- For appointment listings: Use 'appointment_list' for "list all appointments" 
+- For legal questions about penalties, laws, or procedures: Use 'duckduckgo_search'
+- For specific information: Use appropriate tools like 'case_search', 'client_details', etc.
+
+For greetings or general questions, respond with a direct "final_answer" without using tools.
 """
-
-# Custom tool definitions
 
 # Client Tools
 class ClientCreateSchema(BaseModel):
@@ -53,7 +46,7 @@ class ClientCreateSchema(BaseModel):
     phone_number: str = Field(..., description="Client's phone number")
     email_address: str = Field(..., description="Client's email address")
 
-@tool("client_create",return_direct=True)
+@tool("client_create")
 def client_create(
     name: str,
     phone_number: str,
@@ -70,7 +63,7 @@ def client_create(
     except Exception as e:
         return f"Error creating client: {str(e)}"
 
-@tool("client_search",return_direct=True)
+@tool("client_search")
 def client_search(query: str) -> str:
     """Search for clients by name, email, or phone number."""
     clients = Client.objects.filter(
@@ -92,7 +85,7 @@ def client_search(query: str) -> str:
     
     return results
 
-@tool("client_details",return_direct=True)
+@tool("client_details")
 def client_details(client_id: int) -> str:
     """Get detailed information about a specific client."""
     try:
@@ -147,7 +140,7 @@ def client_details(client_id: int) -> str:
         return f"Error retrieving client details: {str(e)}"
 
 # Case Tools
-@tool("case_create",return_direct=True)
+@tool("case_create")
 def case_create(
     client_id: int,
     case_number: str,
@@ -189,7 +182,7 @@ def case_create(
     except Exception as e:
         return f"Error creating case: {str(e)}"
 
-@tool("case_search",return_direct=True)
+@tool("case_search")
 def case_search(query: str) -> str:
     """Search for cases by case number, type, court, or client name."""
     cases = Case.objects.filter(
@@ -213,7 +206,7 @@ def case_search(query: str) -> str:
     
     return results
 
-@tool("case_details",return_direct=True)
+@tool("case_details")
 def case_details(case_number: str) -> str:
     """Get detailed information about a specific case."""
     try:
@@ -253,7 +246,7 @@ def case_details(case_number: str) -> str:
         return f"Error retrieving case details: {str(e)}"
 
 # Appointment Tools
-@tool("appointment_create",return_direct=True)
+@tool("appointment_create")
 def appointment_create(
     client_id: int,
     date: str,
@@ -279,7 +272,7 @@ def appointment_create(
     except Exception as e:
         return f"Error scheduling appointment: {str(e)}"
 
-@tool("appointment_list",return_direct=True)
+@tool("appointment_list")
 def appointment_list(date: str = None) -> str:
     """List appointments, optionally filtered by date."""
     query = Appointment.objects.all().order_by('date', 'time')
@@ -299,7 +292,7 @@ def appointment_list(date: str = None) -> str:
     return results
 
 # Invoice Tools
-@tool("invoice_create",return_direct=True)
+@tool("invoice_create")
 def invoice_create(
     client_id: int,
     total_amount: float,
@@ -316,7 +309,7 @@ def invoice_create(
             client=client,
             total_amount=total_amount,
             paid_amount=paid_amount,
-            due_amount=total_amount - paid_amount,  # Will be recalculated in save()
+            due_amount=total_amount - paid_amount,
             service=service,
             payment_mode=payment_mode,
             due_date=due_date
@@ -329,7 +322,7 @@ def invoice_create(
     except Exception as e:
         return f"Error creating invoice: {str(e)}"
 
-@tool("invoice_details",return_direct=True)
+@tool("invoice_details")
 def invoice_details(invoice_number: str) -> str:
     """Get detailed information about a specific invoice."""
     try:
@@ -354,7 +347,7 @@ def invoice_details(invoice_number: str) -> str:
         return f"Error retrieving invoice details: {str(e)}"
 
 # Task Tools
-@tool("task_create",return_direct=True)
+@tool("task_create")
 def task_create(
     task_name: str,
     related_to: str,
@@ -391,7 +384,7 @@ def task_create(
     except Exception as e:
         return f"Error creating task: {str(e)}"
 
-@tool("task_list",return_direct=True)
+@tool("task_list")
 def task_list(status: str = None) -> str:
     """List tasks, optionally filtered by status."""
     query = Task.objects.all().order_by('deadline')
@@ -410,10 +403,10 @@ def task_list(status: str = None) -> str:
     
     return results
 
-# DuckDuckGo Search Tool for legal information - No API key required
-@tool("duckduckgo_search",return_direct=True)
+# DuckDuckGo Search Tool
+@tool("duckduckgo_search")
 def duckduckgo_search(query: str) -> str:
-    """Search for information using DuckDuckGo (no API key required)."""
+    """Search for information using DuckDuckGo."""
     try:
         ddgs = DDGS()
         results = list(ddgs.text(query, max_results=5))
@@ -432,6 +425,20 @@ def duckduckgo_search(query: str) -> str:
     except Exception as e:
         return f"Error performing search: {str(e)}"
 
+# File handling tool
+@tool("process_file")
+def process_file(file_content: str, file_type: str) -> str:
+    """Process uploaded file content."""
+    try:
+        if file_type.lower() == "text/plain":
+            return f"File contents processed: {file_content[:100]}..."
+        elif file_type.lower() in ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
+            return f"Processed {file_type} file. First 100 chars: {file_content[:100]}..."
+        else:
+            return f"Unsupported file type: {file_type}"
+    except Exception as e:
+        return f"Error processing file: {str(e)}"
+
 # Define all tools
 tools = [
     client_create,
@@ -446,10 +453,11 @@ tools = [
     invoice_details,
     task_create,
     task_list,
-    duckduckgo_search  # New DuckDuckGo search tool
+    duckduckgo_search,
+    process_file
 ]
 
-# Create prompt template
+# Create prompt template with JSON formatting
 prompt = ChatPromptTemplate.from_messages([
     SystemMessage(content=SYSTEM_PROMPT),
     MessagesPlaceholder(variable_name="chat_history"),
@@ -457,39 +465,78 @@ prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="agent_scratchpad"),
 ])
 
-# Create agent
+# Create agent with robust parsing
 agent = create_openai_tools_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools,allowed_tools=[tool.name for tool in tools], verbose=True)
+agent_executor = AgentExecutor(
+    agent=agent, 
+    tools=tools,
+    handle_parsing_errors=True,
+    max_iterations=5,  # Allow more iterations for complex queries
+    early_stopping_method="force",
+    verbose=True,
+    return_intermediate_steps=True  # This helps with debugging
+)
 
+# Chat history management
+class MessageStore:
+    """Simple in-memory message store"""
+    def __init__(self):
+        self.conversations = {}
+        
+    def get_messages(self, conversation_id: str):
+        if conversation_id not in self.conversations:
+            self.conversations[conversation_id] = []
+        return self.conversations[conversation_id]
+    
+    def add_message(self, conversation_id: str, message):
+        if conversation_id not in self.conversations:
+            self.conversations[conversation_id] = []
+        self.conversations[conversation_id].append(message)
+        print(f"Added message to history ({conversation_id}): {message}")
+    
+    def clear_messages(self, conversation_id: str):
+        self.conversations[conversation_id] = []
+        print(f"Cleared message history for conversation: {conversation_id}")
+        
+    def print_history(self, conversation_id: str):
+        if conversation_id not in self.conversations:
+            print(f"No history for conversation: {conversation_id}")
+            return
+            
+        print(f"=== CONVERSATION HISTORY ({conversation_id}) ===")
+        for i, msg in enumerate(self.conversations[conversation_id]):
+            content = msg.content if hasattr(msg, "content") else str(msg)
+            msg_type = msg.__class__.__name__ if hasattr(msg, "__class__") else "Unknown"
+            print(f"{i}: [{msg_type}] {content[:100]}{'...' if len(content) > 100 else ''}")
+        print(f"=== END HISTORY ({conversation_id}) ===")
+
+message_store = MessageStore()
 
 class DjangoMessageHistory(BaseChatMessageHistory):
-    """Message history backed by Django's database"""
+    """Message history backed by our message store"""
     
     def __init__(self, session_id: str):
         self.session_id = session_id
-        self._messages = []  # Use a private attribute
-        
-        # Optionally, load messages from DB here
-        # self._load_messages_from_db()
+        print(f"Initializing history for session: {session_id}")
         
     def add_message(self, message):
         """Add a message to the history"""
-        self._messages.append(message)
-        # Save to DB here if needed
+        message_store.add_message(self.session_id, message)
         
     def clear(self):
         """Clear message history"""
-        self._messages = []
-        # Clear from DB here if needed
+        message_store.clear_messages(self.session_id)
         
     @property
     def messages(self):
-        """Return the messages - this property is required"""
-        return self._messages
+        """Return the messages"""
+        msgs = message_store.get_messages(self.session_id)
+        print(f"Retrieved {len(msgs)} messages for session: {self.session_id}")
+        return msgs
 
 def get_session_history(session_id: str):
     """Get or create a chat message history for a session"""
-    # Return the message history directly
+    print(f"Getting history instance for session: {session_id}")
     return DjangoMessageHistory(session_id=session_id)
 
 agent_with_chat_history = RunnableWithMessageHistory(
@@ -501,43 +548,229 @@ agent_with_chat_history = RunnableWithMessageHistory(
 )
 
 def process_message(message: str, conversation_id: str, uploaded_file=None) -> str:
-    """Process a message using the LangChain agent with Zep memory"""
+    """
+    Process a message from the user within a conversation.
+    
+    Args:
+        message (str): The user's message text
+        conversation_id (str): A unique identifier for this conversation
+        uploaded_file (optional): A file object with read() method and content_type attribute
+        
+    Returns:
+        str: The final response after processing and executing any necessary tools
+    """
     try:
-        print(f"Received message: '{message}'")
-        print(f"Conversation ID: '{conversation_id}'")
-        # Handle file upload if present
-        file_content = ""
-        if uploaded_file:
-            # Read file content depending on file type
-            file_extension = uploaded_file.name.split('.')[-1].lower()
+        print(f"Processing message: '{message}' for conversation: {conversation_id}")
+        
+        # Special case handling for direct questions that shouldn't go through the agent
+        lower_message = message.lower().strip()
+
             
-            if file_extension in ['txt', 'pdf', 'doc', 'docx']:
-                # For text-based files, read the content
-                file_content = f"\nThe user has uploaded a file named '{uploaded_file.name}'.\n"
-                
-                # For simplicity, we'll just read as text, but in a real app
-                # you would use appropriate parsers
-                try:
-                    file_content += uploaded_file.read().decode('utf-8')
-                except UnicodeDecodeError:
-                    file_content += "This file contains binary content that couldn't be read as text."
-                
-                file_content += "\nPlease help the user with this document."
+        # Function to execute a tool given its name and parameters
+        def execute_tool(tool_name, params):
+            print(f"Executing tool: {tool_name} with params: {params}")
+            for tool in tools:
+                if tool.name == tool_name:
+                    # Convert params to the format expected by the tool
+                    if isinstance(params, dict):
+                        try:
+                            # Use tool.invoke instead of direct call to avoid deprecation warning
+                            result = tool.invoke(params)
+                            print(f"Tool execution result type: {type(result)}")
+                            return result
+                        except Exception as e:
+                            print(f"Error executing tool {tool_name}: {str(e)}")
+                            return f"Error executing tool {tool_name}: {str(e)}"
+                    else:
+                        try:
+                            # Use tool.invoke with dict for single parameter tools
+                            if tool_name == "client_search":
+                                result = tool.invoke({"query": params})
+                            elif tool_name == "duckduckgo_search":
+                                result = tool.invoke({"query": params})
+                            elif tool_name == "appointment_list":
+                                if params and params.lower() != "null":
+                                    result = tool.invoke({"date": params})
+                                else:
+                                    result = tool.invoke({})
+                            else:
+                                # Fallback
+                                result = tool.invoke({"query": params})
+                            return result
+                        except Exception as e:
+                            print(f"Error executing tool {tool_name} with params {params}: {str(e)}")
+                            return f"Error executing tool {tool_name}: {str(e)}"
+            return f"Tool {tool_name} not found"
         
-        # Combine the message with file content if any
-        full_message = message
-        if file_content:
-            full_message = f"{message}\n\nFile Content: {file_content}"
+        # Direct command mapping
+        tool_command_mapping = {
+            "list all clients": ("client_search", {"query": ""}),
+            "show all clients": ("client_search", {"query": ""}),
+            "get all clients": ("client_search", {"query": ""}),
+            "show clients": ("client_search", {"query": ""}),
+            "list clients": ("client_search", {"query": ""}),
+            
+            "list all appointments": ("appointment_list", {}),
+            "show all appointments": ("appointment_list", {}),
+            "get all appointments": ("appointment_list", {}),
+            "show appointments": ("appointment_list", {}),
+            "get appointments": ("appointment_list", {}),
+            "give me all appointments": ("appointment_list", {})
+        }
         
-        # Process with the agent
+        # Check for direct command match
+        if lower_message in tool_command_mapping:
+            tool_name, params = tool_command_mapping[lower_message]
+            print(f"Direct tool match: {tool_name}")
+            result = execute_tool(tool_name, params)
+            return result
+            
+        # Prepare the input
+        input_data = {"input": message}
+        
+        # Process uploaded file if present
+        if uploaded_file:
+            try:
+                # Read file content
+                file_content = uploaded_file.read()
+                if isinstance(file_content, bytes):
+                    file_content = file_content.decode('utf-8', errors='replace')
+                
+                # Call file processing tool directly
+                file_result = process_file(file_content, uploaded_file.content_type)
+                
+                # Add file info to the message
+                input_data["input"] = f"{message}\n\nUploaded file: {uploaded_file.name}\nFile analysis: {file_result}"
+            except Exception as e:
+                return f"Error processing uploaded file: {str(e)}"
+        
+        # Check for legal question pattern
+        if any(keyword in lower_message for keyword in ["penalty", "fine", "punishment", "law", "legal", "court", "section"]):
+            # Legal questions should use duckduckgo_search
+            print(f"Legal question detected, using duckduckgo_search")
+            result = execute_tool("duckduckgo_search", {"query": message})
+            return result
+            
+        # Process the input through the agent for other queries
+        print(f"Sending to agent: {message}")
         response = agent_with_chat_history.invoke(
-            {"input": full_message, "chat_history": []},
+            input_data,
             config={"configurable": {"session_id": conversation_id}}
         )
         
-        return response["output"]
-    
+        # Extract the response
+        if isinstance(response, dict) and "output" in response:
+            raw_output = response["output"]
+            print(f"Raw agent output: {raw_output[:100]}...")
+        else:
+            raw_output = str(response)
+            print(f"Raw agent output (string): {raw_output[:100]}...")
+        
+        # Check if the response is already valid JSON
+        try:
+            json_data = json.loads(raw_output)
+            print(f"Parsed JSON: {json_data}")
+            # Check if this JSON indicates a tool call
+            if json_data.get("type") == "tool":
+                tool_name = json_data.get("name")
+                params = json_data.get("params", {})
+                
+                print(f"Executing tool from JSON: {tool_name}")
+                # Execute the tool
+                result = execute_tool(tool_name, params)
+                return result
+            else:
+                # It's already a final answer
+                return json_data.get("content", raw_output)
+        except json.JSONDecodeError:
+            # The output might be formatted as JSON string but not proper JSON
+            # Try to extract JSON with regex
+            import re
+            json_match = re.search(r'\{.*"type":\s*"[^"]*".*\}', raw_output, re.DOTALL)
+            if json_match:
+                try:
+                    json_str = json_match.group(0)
+                    print(f"Found JSON with regex: {json_str}")
+                    json_data = json.loads(json_str)
+                    if json_data.get("type") == "tool":
+                        tool_name = json_data.get("name")
+                        params = json_data.get("params", {})
+                        print(f"Executing tool from regex-JSON: {tool_name}")
+                        result = execute_tool(tool_name, params)
+                        return result
+                    else:
+                        return json_data.get("content", raw_output)
+                except Exception as e:
+                    print(f"Error parsing regex JSON: {str(e)}")
+                    
+            # Not JSON, check for ReAct format
+            if "Action:" in raw_output and "Action Input:" in raw_output:
+                # Try to extract tool name and parameters
+                try:
+                    # Extract the tool name
+                    action_parts = raw_output.split("Action:")
+                    tool_name = action_parts[1].split("\n")[0].strip()
+                    print(f"Found tool in ReAct format: {tool_name}")
+                    
+                    # Extract parameters
+                    if "Action Input:" in raw_output:
+                        action_input_parts = raw_output.split("Action Input:")
+                        action_input_text = ""
+                        
+                        if len(action_input_parts) > 1:
+                            if "Observation:" in action_input_parts[1]:
+                                action_input_text = action_input_parts[1].split("Observation:")[0].strip()
+                            else:
+                                action_input_text = action_input_parts[1].strip()
+                    
+                    # Parse action input
+                    try:
+                        # Try to parse as JSON
+                        params = json.loads(action_input_text)
+                    except:
+                        # Special handling for different tools
+                        if tool_name == "client_search":
+                            params = {"query": action_input_text}
+                        elif tool_name == "appointment_list":
+                            if action_input_text and action_input_text.lower() != "null":
+                                params = {"date": action_input_text}
+                            else:
+                                params = {}
+                        elif tool_name == "duckduckgo_search":
+                            params = {"query": action_input_text}
+                        else:
+                            # Default handling
+                            params = {"query": action_input_text}
+                    
+                    # Execute the tool
+                    print(f"Executing tool from ReAct: {tool_name}")
+                    result = execute_tool(tool_name, params)
+                    return result
+                except Exception as e:
+                    print(f"Error parsing ReAct format: {str(e)}")
+                    # Fallback if parsing fails
+                    return raw_output
+            else:
+                # It's a direct answer
+                return raw_output
     except Exception as e:
         import traceback
-        traceback.print_exc()
-        return f"I encountered an error processing your request: {str(e)}"
+        trace = traceback.format_exc()
+        print(f"Error in process_message: {str(e)}\n{trace}")
+        # Handle any unexpected errors
+        return f"Error processing your request: {str(e)}"
+
+# Direct LLM query without tools
+def query_llm_directly(message: str) -> str:
+    """Query the LLM directly without using tools."""
+    try:
+        response = llm.invoke(message)
+        return json.dumps({
+            "type": "final_answer",
+            "content": response.content
+        })
+    except Exception as e:
+        return json.dumps({
+            "type": "final_answer",
+            "content": f"Error querying LLM: {str(e)}"
+        })
