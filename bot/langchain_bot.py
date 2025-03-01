@@ -22,31 +22,12 @@ from duckduckgo_search import DDGS
 from django.conf import settings
 from .models import Client, Case, Task, Appointment, Invoice, CustomUser
 
-# Configure API keys
-ANTHROPIC_API_KEY = "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"
-ZEP_API_URL = "https://api.getzep.com"
-ZEP_API_KEY = "z_1dWlkIjoiYjcwZjY3YTMtNzY2Zi00OTUzLTk0NGEtNWEwMTYwYjRjYzVmIn0.apxm-fcsqZtMd-B55Fy0Pr8INeinf8x4I7AG-SapS4NMPVSvpXJRzvlywyrpCUEHN7FBKtmyQb3WcghYSUTWwg"
-
-# Initialize the LLM
-# llm = ChatAnthropic(
-#     temperature=0.2,
-#     model="claude-3-sonnet-20240229",
-#     anthropic_api_key=ANTHROPIC_API_KEY
-# )
-# llm = AzureChatOpenAI(
-#     deployment_name="gpt-4o-mini",  # Replace with your Azure model deployment name
-#     model="gpt-4o",  # Or "gpt-35-turbo" depending on your setup
-#     azure_endpoint="https://hertzai-gpt4.openai.azure.com/",  # Replace with your Azure endpoint
-#     api_key="4xmi9X9pGCwRn2Pb0vldz6t6FQaAe29bUIkFjKRC7ytrVZ1Ni5cWJQQJ99BAACHYHv6XJ3w3AAABACOG99Zf",
-#     api_version="2024-02-15-preview",  # Use the correct API version from Azure
-#     temperature=0.2
-# )
 llm = ChatOpenAI(
     model="meta-llama/Llama-3.3-70B-Instruct-Turbo",  # Or use "meta-llama/Llama-2-7b-chat-hf"
-    openai_api_key="4691bd0a2080cfd38ae58e8645a07645faa98a9d9681dddba2b4490668d01e5b",
+    openai_api_key="",
     openai_api_base="https://api.together.xyz/v1",
 )
-
+#4691bd0a2080cfd38ae58e8645a07645faa98a9d9681dddba2b4490668d01e5b
 # System prompt for the legal assistant
 SYSTEM_PROMPT = """You are a legal assistant for a law firm in India. You help lawyers manage their practice by providing information about clients, cases, appointments, invoices, and tasks. You can also answer basic questions about Indian law.
 
