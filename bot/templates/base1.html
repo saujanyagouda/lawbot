@@ -73,9 +73,22 @@
 
         <!-- Dynamic Page Content -->
         <div class="container-fluid mt-4">
-            <a href="{% url 'legalbot' %}" class="chat-button">
-                <img src="{% static 'images/icons8-chat-bubble-50.png' %}" alt="Chat Icon">
-            </a>
+            <div class="chat-icon-container">
+                <a href="{% url 'legalbot' %}"
+                 class="chat-icon" id="chat-icon" onclick="openChat()">
+                    <i class="fas fa-comment-dots"></i>
+                </a>
+            </div>
+        
+            <!-- Add basic chat functionality -->
+            <script>
+                function openChat() {
+                    // You can implement a chat popup or redirect to a chat page
+                    
+                    // Alternatively, redirect to a chat page:
+                    // window.location.href = "{% url 'legalbot' %}";
+                }
+            </script>
             {% block content %}{% endblock %}
         </div>
         

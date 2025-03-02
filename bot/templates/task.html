@@ -2,10 +2,12 @@
 {% load static %}
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center">
-        <h2>Tasks</h2>
-        <button class="btn btn-primary" id="addTaskBtn">+ Add Task</button>
-    </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+        <h2 class="mb-2 mb-sm-0">Tasks</h2>
+        <button class="btn btn-primary btn-sm py-1 px-2" id="addTaskBtn">
+          <i class="fas fa-plus me-1"></i><span>Add task</span>
+        </button>
+      </div>
 
     <div class="table-container mt-3">
         <div class="d-flex justify-content-between">

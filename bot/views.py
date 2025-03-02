@@ -184,7 +184,7 @@ def dashboard(request):
     full_name = request.user.get_full_name()
     stats = {
         'total_clients': Client.objects.count(),
-        'total_cases': 200,
+        'total_cases': Case.objects.count(),
         'important_cases': 10,
         'archived_cases': 5,
     }

@@ -360,10 +360,10 @@ input:checked + .slider:before {
 }
 .badge-in-progress { background-color: #dbeafe; color: #1e40af; } /* Light Blue */
 .badge-completed { background-color: #d1fae5; color: #065f46; } /* Green */
-.badge-pending { background-color: #fde68a; color: #92400e; } /* Yellow */
+.badge-pending { background-color: #dab41c; color: #92400e; } /* Yellow */
 .badge-urgent { background-color: #fee2e2; color: #b91c1c; } /* Red */
 .badge-high { background-color: #fef3c7; color: #b45309; } /* Orange */
-.badge-medium { background-color: #d1fae5; color: #065f46; } /* Green */
+.badge-medium { background-color: #3bf595; color: #065f46; } /* Green */
 .badge-low { background-color: #e0f2fe; color: #0369a1; } /* Blue */
 
 .case-number {
@@ -615,3 +615,47 @@ table th, table td {
     height: 30px;
     filter: invert(1); /* Makes the icon white */
 }
+
+@media (max-width: 576px) {
+    .addClientBtn {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem !important;
+    }
+    
+    h2 {
+      font-size: 1.5rem;
+    }
+  }
+  
+  /* Extremely small screens */
+  @media (max-width: 360px) {
+    #addClientBtn {
+      padding: 0.2rem 0.3rem !important;
+    }
+    
+    #addClientBtn span {
+      font-size: 0.7rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .addCaseBtn {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem !important;
+    }
+    
+    h2 {
+      font-size: 1.5rem;
+    }
+  }
+  
+  /* Extremely small screens */
+  @media (max-width: 360px) {
+    #addCaseBtn {
+      padding: 0.2rem 0.3rem !important;
+    }
+    
+    #addCaseBtn span {
+      font-size: 0.7rem;
+    }
+  }
