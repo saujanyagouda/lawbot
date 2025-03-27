@@ -15,10 +15,9 @@
         <button id="send-btn">
             <span class="send-icon">✈</span>
         </button>
-        
-    </div>
-    <div id="loading-indicator" style="display: none; text-align: center; margin-top: 10px;">
-        <div class="spinner">Processing...</div>
+        <div id="loading-indicator" style="display: none;">
+            <div class="spinner"></div>
+        </div>
     </div>
 </div>
 
@@ -114,7 +113,7 @@
             
             appendMessage("user", userText);
             userInput.value = "";
-            loadingIndicator.style.display = "block";
+            loadingIndicator.style.display = "flex";
             
             // Get any attached file
             const fileInput = document.getElementById('file-upload');
@@ -238,9 +237,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        padding-right: 20%;
     }
-    
     
     #user-input {
         flex-grow: 1;
@@ -260,17 +257,11 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        position: relative;
-        z-index: 10;
-        
-        
     }
    
     .send-icon {
         font-size: 20px;
-        margin-right: 5px;
     }
-    
     
     .upload-icon {
         background-color: #28a745;
@@ -280,14 +271,19 @@
         cursor: pointer;
     }
     
+    #loading-indicator {
+        margin-left: 10px;
+        align-items: center;
+        justify-content: center;
+    }
+    
     .spinner {
         border: 4px solid rgba(0, 0, 0, 0.1);
-        width: 36px;
-        height: 36px;
+        width: 24px;
+        height: 24px;
         border-radius: 50%;
         border-left-color: #007bff;
         animation: spin 1s linear infinite;
-        margin: 0 auto;
     }
     
     @keyframes spin {

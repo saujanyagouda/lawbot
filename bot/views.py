@@ -15,7 +15,7 @@ from .models import Client, Task, Case, Appointment, Invoice
 import random
 import uuid
 import json
-from .langchain_bot import process_message
+from .langchain_bot import  handle_legal_query, answer_direct_question
 
 User = get_user_model()
 
@@ -92,6 +92,26 @@ dummy_courts = [
 ]
 
 
+def is_simple_query(message):
+    """
+    Determine if a query is simple (greeting, small talk) or complex (legal question)
+    """
+    simple_patterns = [
+        'hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening',
+        'how are you', 'what can you do', 'who are you', 'your name',
+        'thanks', 'thank you'
+    ]
+    
+    lower_message = message.lower()
+    
+    # Check if message is a simple greeting or small talk
+    for pattern in simple_patterns:
+        if pattern in lower_message:
+            # Only match if the message is fairly short
+            if len(lower_message.split()) < 8:
+                return True
+                
+    return False
 
 def email_send(subject,message,email):
     try:
@@ -543,18 +563,37 @@ def initialize_chat(request):
 @require_POST
 def chat_response(request):
     """Process the chat message and return a response"""
-    message = request.POST.get('message', 'What is your name')
+    user_message = request.POST.get('message', 'What is your name')
     conversation_id = request.POST.get('conversation_id', '')
+    language = 'English'
     
-    # Handle file upload if present
-    uploaded_file = None
-    if 'file' in request.FILES:
-        uploaded_file = request.FILES['file']
+    if not conversation_id:
+        conversation_id = str(uuid.uuid4())
+        
+    if not user_message:
+        return JsonResponse({
+            'response': "I didn't receive any message. How can I assist you with your legal query?",
+            'conversation_id': conversation_id
+        })
+
+    
+    if is_simple_query(user_message):
+        # For simple questions, use direct answering
+        bot_response = answer_direct_question(user_message)
+    else:
+        # For complex legal queries, use the RAG system
+        bot_response = handle_legal_query(user_message, language)
+        
+            
+    # # Handle file upload if present
+    # uploaded_file = None
+    # if 'file' in request.FILES:
+    #     uploaded_file = request.FILES['file']
     
     # Process the message using LangChain
-    response = process_message(message, conversation_id, uploaded_file)
+    # response = process_message(bot_response, conversation_id,uploaded_file )
     
-    return JsonResponse({"response": response})
+    return JsonResponse({"response": bot_response})
 
 @login_required
 def appointments(request):
