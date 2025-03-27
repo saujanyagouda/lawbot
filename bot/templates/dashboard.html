@@ -18,16 +18,16 @@
                 <div class="stat-para">Total cases</div>
             </div>
             <div class="stats-box">
-                <i><img src="{% static 'images/impotant.png' %}" alt="cases" style="width: 40px; height: 40px;"></i>
-                <div class="stat-value">{{ stats.important_cases }}</div>
-                <div class="stat-label">Important Cases</div>
-                <div class="stat-para">Total important cases</div>
+                <i><img src="{% static 'images/calendar.png' %}" alt="cases" style="width: 40px; height: 40px;"></i>
+                <div class="stat-value">{{ stats.appointments }}</div>
+                <div class="stat-label">Appointments</div>
+                <div class="stat-para">Total Appointments</div>
             </div>
             <div class="stats-box">
-                <i><img src="{% static 'images/archived.png' %}" alt="cases" style="width: 40px; height: 40px;"></i>
-                <div class="stat-value">{{ stats.archived_cases }}</div>
-                <div class="stat-label">Archived Cases</div>
-                <div class="stat-para">Total completed cases</div>
+                <i><img src="{% static 'images/dollar.png' %}" alt="cases" style="width: 40px; height: 40px;"></i>
+                <div class="stat-value">{{ stats.invoice }}</div>
+                <div class="stat-label">Invoices</div>
+                <div class="stat-para">Total invoices</div>
             </div>
         </div>
         
@@ -40,36 +40,50 @@
                         <a href="{% url 'cases' %}" class="view-all">View All →</a>
                     </div>
                     <div class="card-content">
-                        {% for case in cases %}
-                        <div class="item">
-                            <h3>{{ case.client_name }}</h3>
-                            <p>Case: {{ case.case_type }}</p>
-                            <p>Court: {{ case.court }}</p>
-                            <div class="item-meta">
-                                <i class="icon"><img src="{% static 'images/clock.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Next Date: {{ case.next_date }}
+                        {% if cases %}
+                            {% for case in cases %}
+                            <div class="item">
+                                <h3>{{ case.client.name }}</h3>
+                                <p>Case: {{ case.case_type }}</p>
+                                <p>Court: {{ case.court_name }}</p>
+                                <div class="item-meta">
+                                    <i class="icon"><img src="{% static 'images/clock.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Next Date: {{ case.next_hearing_date }}
+                                </div>
                             </div>
+                            {% endfor %}
+                        {% else %}
+                        <div class="item">
+                            <h3><p>No Cases available.</p></h3>
                         </div>
-                        {% endfor %}
+            
+                        {% endif %}
                     </div>
                 </section>
     
                 <!-- Urgent Tasks -->
                 <section class="card">
                     <div class="card-header">
-                        <h2><i class="icon"><img src="{% static 'images/urgent.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Urgent Tasks</h2>
+                        <h2><i class="icon"><img src="{% static 'images/urgent.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Recent Tasks</h2>
                         <a href="{% url 'task' %}" class="view-all">View All →</a>
                     </div>
                     <div class="card-content">
-                        {% for task in tasks %}
-                        <div class="item">
-                            <h3>{{ task.task_name }}</h3>
-                            <p>Related to: {{ task.related_to.name }}</p>
-                            <p>Case: {{ task.related_to.case_number }}</p>
-                            <div class="item-meta">
-                                <i class="icon"><img src="{% static 'images/clock.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Deadline: {{ task.deadline }}
+                        {% if tasks %}
+                            {% for task in tasks %}
+                            <div class="item">
+                                <h3>{{ task.task_name }}</h3>
+                                <p>Related to: {{ task.related_to }}</p>
+                                <p>Case: {{ task.case_number }}</p>
+                                <div class="item-meta">
+                                    <i class="icon"><img src="{% static 'images/clock.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> Deadline: {{ task.deadline }}
+                                </div>
                             </div>
+                            {% endfor %}
+                        {% else %}
+                        <div class="item">
+                            <h3><p>No Task available.</p></h3>
                         </div>
-                        {% endfor %}
+            
+                        {% endif %}
                     </div>
                 </section>
     
@@ -80,14 +94,21 @@
                         <a href="{% url 'appointments' %}" class="view-all">View All →</a>
                     </div>
                     <div class="card-content">
-                        {% for appointment in appointments %}
-                        <div class="item">
-                            <h3>{{ appointment.client_name }}</h3>
-                            <div class="item-meta">
-                                <i class="icon"><img src="{% static 'images/clock.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> {{ appointment.time }}
+                        {% if appointments %}
+                            {% for appointment in appointments %}
+                            <div class="item">
+                                <h3>{{ appointment.client.name }}</h3>
+                                <div class="item-meta">
+                                    <i class="icon"><img src="{% static 'images/clock.png' %}" alt="cases" style="width: 30px; height: 30px;"></i> {{ appointment.time }}
+                                </div>
                             </div>
+                            {% endfor %}
+                        {% else %}
+                        <div class="item">
+                            <h3><p>No appointments for today.</p></h3>
                         </div>
-                        {% endfor %}
+            
+                        {% endif %}
                     </div>
                 </section>
     
@@ -98,13 +119,20 @@
                         <a href="{% url 'clients' %}" class="view-all">View All →</a>
                     </div>
                     <div class="card-content">
-                        {% for client in clients %}
+                        {% if clients %}
+                            {% for client in clients %}
+                            <div class="item">
+                                <h3>{{ client.name }}</h3>
+                                <p>Mobile: {{ client.phone_number }}</p>
+                                <p>email: {{ client.email_address }}</p>
+                            </div>
+                            {% endfor %}
+                        {% else %}
                         <div class="item">
-                            <h3>{{ client.name }}</h3>
-                            <p>Mobile: {{ client.mobile }}</p>
-                            <p>Cases: {{ client.cases }}</p>
+                            <h3><p>No Clients available.</p></h3>
                         </div>
-                        {% endfor %}
+            
+                        {% endif %}
                     </div>
                 </section>
             </div>

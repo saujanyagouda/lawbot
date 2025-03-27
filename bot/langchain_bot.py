@@ -653,6 +653,7 @@ def process_message(message: str, conversation_id: str, uploaded_file=None) -> s
             
         # Process the input through the agent for other queries
         print(f"Sending to agent: {message}")
+        print(f"input_data: {input_data}")
         response = agent_with_chat_history.invoke(
             input_data,
             config={"configurable": {"session_id": conversation_id}}

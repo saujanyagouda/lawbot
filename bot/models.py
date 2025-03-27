@@ -27,6 +27,7 @@ class Client(models.Model):
     email_address = models.EmailField(unique=True)
     status = models.BooleanField(default=True)  # Example: Active or Inactive Client
     is_active = models.BooleanField(default=True)  # Whether the client is currently active
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="client",null=True)
 
     def __str__(self):
         return self.name
@@ -52,6 +53,7 @@ class Task(models.Model):
     deadline = models.DateField()
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='Medium')
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='Pending')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="task",null=True)
 
     def __str__(self):
         return f"{self.task_name} ({self.case_number})"
@@ -77,6 +79,7 @@ class Case(models.Model):
 
     next_hearing_date = models.DateField()  # 07-20-2021
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='on-trial')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="case",null=True)
 
     def __str__(self):
         return f"{self.client_name} - {self.case_number}"
@@ -97,6 +100,7 @@ class Appointment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     topic = models.TextField(blank=True, null=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="appointment",null=True)
     
     class Meta:
         ordering = ['date', 'time']
@@ -127,6 +131,7 @@ class Invoice(models.Model):
     payment_mode = models.CharField(max_length=255)  
     due_date = models.DateTimeField()
     
+    
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
     
@@ -137,6 +142,7 @@ class Invoice(models.Model):
     )
     
     invoice_file = models.FileField(upload_to='invoices/', blank=True, null=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="invoice",null=True)
     
     def __str__(self):
         return f"{self.invoice_number} - {self.client.name}"

@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.contrib import messages
@@ -122,6 +123,15 @@ def contact(request):
             return redirect("contact")
         new_message = f'Hello,\nYou have received a new contact form submission.\n\nName: {first_name} {last_name}\nPhone: {phone}\nEmail: {email}\nSubject: {subject}\nMessage: {message}'
         email_send('New Contact Form Submission',new_message,'goudasaujanya@gmail.com')
+
+        new_message = '''Thank you for contacting us! We have received your message and our team will get back to you as soon as possible. We strive to respond within 24 hours, and we appreciate your patience.
+
+        Thank you again for reaching out. We look forward to assisting you.
+
+        Best regards,
+        Team LawBot.'''
+        email_send('Thank You for Reaching Out!',new_message,email)
+
     return render(request, 'contact.html',{"show_footer":True})
 
 def login(request):
@@ -183,60 +193,17 @@ def signup(request):
 def dashboard(request):
     full_name = request.user.get_full_name()
     stats = {
-        'total_clients': Client.objects.count(),
-        'total_cases': Case.objects.count(),
-        'important_cases': 10,
-        'archived_cases': 5,
+        'total_clients': Client.objects.filter(user=request.user).count(),
+        'total_cases': Case.objects.filter(user=request.user).count(),
+        'appointments': Appointment.objects.filter(user=request.user).count(),
+        'invoice': Invoice.objects.filter(user=request.user).count(),
     }
-    clients = [
-      {
-        'id': 1,
-        'name': 'Will Cc Smith',
-        'mobile': '0907937399',
-        'cases': 1,
-        'status': True
-      }
-    ]
-    cases = [
-      {
-        'id': 1,
-        'clientName': 'Will Cc Smith',
-        'clientNo': '542344',
-        'caseType': 'Murder',
-        'court': 'RTC - Branch 4',
-        'courtNo': '3123',
-        'magistrate': 'Judge Marvin Tapuyo',
-        'petitioner': 'Will Cc Smith',
-        'respondent': 'Will Smith',
-        'nextDate': '07-20-2021',
-        'status': 'On-Trial',
-        'isImportant': True
-      }
-    ]
-    tasks = [
-      {
-        'id': 1,
-        'taskName': 'Find Evidence',
-        'relatedTo': {
-          'name': 'Will Cc Smith',
-          'caseNumber': '542344'
-        },
-        'startDate': '01-01-1970',
-        'deadline': '01-01-1970',
-        'members': ['D'],
-        'status': 'In Progress',
-        'priority': 'Urgent'
-      }
-    ]
-    appointments = [
-      {
-        'id': 1,
-        'clientName': 'Will Smith',
-        'date': '07-17-2021',
-        'time': '2:20 pm',
-        'status': 'OPEN'
-      }
-    ]
+    today = timezone.now().date()
+    
+    clients = list(Client.objects.filter(user=request.user).order_by('-id')[:1])
+    cases = list(Case.objects.filter(user=request.user).order_by('-id')[:1])
+    tasks = list(Task.objects.filter(user=request.user).order_by('-id')[:1])
+    appointments = list(Appointment.objects.filter(user=request.user, date=today).order_by('-id')[:1])
     return render(request,'dashboard.html',{
         'clients': clients,
         'cases': cases,
@@ -279,9 +246,10 @@ def task(request):
             start_date=start_date,
             deadline=deadline,
             priority=priority,
-            status="Pending"
+            status="Pending",
+            user=request.user
         )
-        print(f"✅ Task Saved: {task}")
+        print(f"✅ Task Saved:")
         messages.success(request, "Task added successfully!")
         return redirect("task")
     elif request.method == "DELETE":
@@ -303,11 +271,13 @@ def task(request):
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Invalid JSON"}, safe=False, status=400)
     elif request.method == "GET":
-        db_tasks = Task.objects.all()
+        db_tasks = Task.objects.filter(user=request.user)
         print(f"📊 Tasks Retrieved: {db_tasks}")  # Debugging
         for i in db_tasks:
             print(i.id)
-        return render(request, "task.html", {"show_footer": False, "tasks": db_tasks,"username":full_name})
+        
+        total_tasks= Task.objects.filter(user=request.user).count()          
+        return render(request, "task.html", {"show_footer": False, "tasks": db_tasks,"username":full_name,"total_tasks":total_tasks})
     elif request.method == 'PUT':
         try:
             data = json.loads(request.body)
@@ -363,6 +333,7 @@ def clients(request):
             email_address=email,
             status=True,
             is_active=True,
+            user=request.user
         )
         messages.success(request, "Client added successfully!")
         return redirect("clients")
@@ -382,7 +353,7 @@ def clients(request):
 
     elif request.method == 'GET':
         full_name = request.user.get_full_name()
-        db_clients = Client.objects.filter(is_active=True)
+        db_clients = Client.objects.filter(is_active=True,user=request.user)
         return render(request, "clients.html", {"show_footer": False,"clients":db_clients,"username":full_name})
     elif request.method =='PUT':
         name = request.PUT.get("clientName", "").strip()
@@ -404,7 +375,7 @@ def invoices(request):
         to_date = request.GET.get('to_date')
         
         # Start with all invoices
-        queryset = Invoice.objects.all()
+        queryset = Invoice.objects.filter(user=request.user)
         
         # Apply date filters if provided
         if from_date:
@@ -421,7 +392,7 @@ def invoices(request):
         context = {
             "show_footer": False,
             "invoices": invoices_list,
-            "total_invoices": Invoice.objects.count(),
+            "total_invoices": Invoice.objects.filter(user=request.user).count(),
             "clients": clients,
             "username":full_name
         }
@@ -440,6 +411,8 @@ def invoices(request):
             # Create new invoice
             total_amount = float(data['totalAmount'])
             paid_amount = float(data['paidAmount'])
+            due_date_naive = datetime.strptime(data['dueDate'], '%Y-%m-%d')
+            due_date_aware = timezone.make_aware(due_date_naive, timezone.get_current_timezone())
             
             # Create new invoice
             Invoice.objects.create(
@@ -448,7 +421,8 @@ def invoices(request):
                 paid_amount=paid_amount,
                 service=data['service'],
                 payment_mode=data['paymentMode'],
-                due_date=data['dueDate']
+                due_date=due_date_aware,
+                user=request.user
                 # due_amount and payment_status will be calculated in save method
             )
             
@@ -591,7 +565,7 @@ def appointments(request):
         to_date = request.GET.get('to_date')
         
         # Start with all appointments
-        queryset = Appointment.objects.all()
+        queryset = Appointment.objects.filter(user=request.user)
         
         # Apply date filters if provided
         if from_date:
@@ -630,10 +604,12 @@ def appointments(request):
                 topic=data.get('topic', ''),
                 date=data['date'],
                 time=data['time'],
-                status=data['status']
+                status=data['status'],
+                user=request.user
             )
             new_message = f' Topic: {data["topic"]}\n Date: {data["date"]}\n Time: {data["time"]}\n status: {data["status"]}'
-            email_send('You have a new Appointment Scheduled',new_message,'goudasaujanya@gmail.com')
+            email_send('You have a new Appointment Scheduled',new_message,client.email_address)
+            email_send('You have a new Appointment Scheduled',new_message,request.user.email)
             
             return JsonResponse({"success": True})
         except Exception as e:
@@ -706,7 +682,7 @@ def get_appointment(request, appointment_id):
 def cases(request):
     if request.method == 'GET':
         full_name = request.user.get_full_name()
-        db_clients = Client.objects.filter(is_active=True)
+        db_clients = Client.objects.filter(is_active=True,user=request.user)
         db_cases = Case.objects.all() #TODO add isactive
         return render(request,'cases.html',{"show_footer":False,
         'clients':db_clients,
@@ -734,7 +710,8 @@ def cases(request):
                 petitioner = data['Petitioner'],
                 respondent = data['Respondent'],
                 next_hearing_date = data['Date'],
-                status = data['Status']
+                status = data['Status'],
+                user=request.user
             )
             return JsonResponse({"success": True})
         except Exception as e:

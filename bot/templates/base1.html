@@ -32,7 +32,7 @@
             <li class="nav-item"><a href="{% url 'appointments' %}" class="nav-link"><i class="fas fa-calendar-alt"></i> Appointments</a></li>
             <li class="nav-item"><a href="{% url 'invoice' %}" class="nav-link"><i class="fas fa-dollar-sign"></i>Invoice</a></li>
             <li class="nav-item"><a href="{% url 'legalbot' %}" class="nav-link"><i class="fas fa-robot"></i> Legal Assistant</a></li>
-            <li class="nav-item"><a href="{% url 'logout' %}" class="nav-link"><i class="fas fa-users"></i>Logout</a></li>
+            <li class="nav-item"><a href="{% url 'logout' %}" class="nav-link"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
         </ul>
     </div>
 
@@ -51,19 +51,9 @@
                 <span class="me-3">{{username}} | Lawyer</span>
         
                 <!-- Notification Bell -->
-                <a href="{% url 'setting' %}" title="Notifications">
-                 <i class="fas fa-bell me-4"></i>
+                <a href="{% url 'logout' %}" title="Logout">
+                 <i class="fas fa-sign-out-alt me-4"></i>
                 </a>
-                
-                <!-- Contact Icon -->
-                 <a href="{% url 'appointments' %}">
-                  <i class="fas fa-envelope me-4" title="Contact"></i>
-                 </a>
-        
-                <!-- Settings Icon -->
-                 <a href="{% url 'setting' %}">
-                  <i class="fas fa-cog" title="Settings"></i>
-                 </a>
             </div>
         </nav>
         <!-- Floating Chat Button -->

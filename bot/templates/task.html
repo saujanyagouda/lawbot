@@ -74,7 +74,7 @@
         </table>
 
         <div class="d-flex justify-content-between">
-            <span>Showing 1 of 1 entries</span>
+            <span>Showing {{ tasks|length }} of {{ total_tasks }} entries</span>
             <div>
                 <button class="btn btn-light btn-sm">Previous</button>
                 <button class="btn btn-light btn-sm">Next</button>
@@ -434,7 +434,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const totalEntries = tableRows.length;
         if (totalEntries === 1 && tableRows[0].cells.length === 1 && 
             tableRows[0].cells[0].textContent.includes("No tasks found")) {
-            entriesInfoSpan.textContent = "Showing 0 of 0 entries";
+            entriesInfoSpan.textContent = "";
             return;
         }
         
