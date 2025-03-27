@@ -16,3 +16,5 @@ Django>=4.2
 psycopg2
 langchain_openai
 duckduckgo_search
+langchain-google-genai
+faiss-cpu
