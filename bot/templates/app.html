@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% block content %}
+<section class="hero-section">
+    <div class="hero-container">
+        <div class="hero-text">
+            <h1>LawBot - Your AI-Powered Legal Assistant</h1>
+            <p>
+                LawBot is an advanced AI-driven legal software designed to assist law firms and professionals 
+                with case management, document automation, and client handling, making legal operations smoother and more efficient.
+            </p>
+            <a href="{% url 'signup' %}" class="hero-btn">Get Started</a>
+        </div>
+        <div class="hero-image">
+            <img src="{% static 'images/lll.jpg' %}" alt="LawBot AI Assistant">
+        </div>
+    </div>
+</section>
+{% endblock %}

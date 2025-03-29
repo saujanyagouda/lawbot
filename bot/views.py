@@ -126,6 +126,8 @@ def email_send(subject,message,email):
 
 def home(request):
     return render(request, 'home.html',{"show_footer":True})
+def app(request):
+    return render(request, 'app.html',{"show_footer":True})
     
 def about(request):
     return render(request, 'about.html',{"show_footer":True})
